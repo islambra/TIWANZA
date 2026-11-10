@@ -78,15 +78,15 @@ import {
 import { StatusPill } from '../admin/AdminDashboard.jsx'
 import { cn } from '../../lib/utils.js'
 
-const BLOCK_ICONS = { richtext: FileText, video: Video, pdf: FileUp, file: FileUp, image: ImageIcon, youtube: Video, gdrive: Link2 }
+const BLOCK_ICONS = { richtext: FileText, video: Video, pdf: FileUp, file: FileUp, image: ImageIcon, gdrive: Link2 }
 const BLOCK_LABEL_KEYS = {
   richtext: 'courseContent.blockText',
   video: 'courseContent.blockVideo',
-  pdf: 'courseContent.blockFile',
+  pdf: 'courseContent.blockPdf',
   file: 'courseContent.blockFile',
   image: 'courseContent.blockImage',
   youtube: 'courseContent.blockVideo',
-  gdrive: 'courseContent.blockFile',
+  gdrive: 'courseContent.blockGdrive',
 }
 
 export default function TrainerCourseEditor() {
@@ -246,7 +246,7 @@ export default function TrainerCourseEditor() {
               <div><Label>{t('courseEditor.description')}</Label><Textarea rows={6} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder={t('courseEditor.descriptionPlaceholder')} /></div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div><Label>{t('courseEditor.category')}</Label><Select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>{['Développement', 'Design', 'Business', 'Langues', 'Gestion', 'Autre'].map((item) => <option key={item}>{item}</option>)}</Select></div>
-                <div><Label>{t('courseEditor.language')}</Label><Select value={form.language} onChange={(event) => setForm({ ...form, language: event.target.value })}><option value="fr">Français</option><option value="ar">العربية</option></Select></div>
+                <div><Label>{t('courseEditor.language')}</Label><Select value={form.language} onChange={(event) => setForm({ ...form, language: event.target.value })}><option value="fr">Francais</option><option value="ar">Arabic</option></Select></div>
                 <div><Label>{t('courseEditor.level')}</Label><Select value={form.difficulty} onChange={(event) => setForm({ ...form, difficulty: event.target.value })}><option value="beginner">{t('publicSite.levelBeginner')}</option><option value="intermediate">{t('publicSite.levelIntermediate')}</option><option value="advanced">{t('publicSite.levelAdvanced')}</option></Select></div>
                 <div><Label>{t('courseEditor.priceDA')}</Label><Input type="number" value={form.isFree ? 0 : form.priceDA} disabled={form.isFree} onChange={(event) => setForm({ ...form, priceDA: Number(event.target.value) })} /><p className="mt-1 text-[10px] text-muted">{t('courseEditor.priceHint')}</p></div>
                 <div><Label>{t('courseEditor.coverImage')}</Label><Input value={form.coverLabel} onChange={(event) => setForm({ ...form, coverLabel: event.target.value.toUpperCase() })} /></div>
@@ -343,18 +343,18 @@ export default function TrainerCourseEditor() {
                         </div>
                       </div>
                     )) : (
-                      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-3 text-[11px] text-muted">
-                        <span>{t('courseContent.noLessonsDesc')}</span>
-                        <div className="flex gap-1.5">
-                          <Button variant="ghost" size="xs" icon={Plus} onClick={() => addNewLesson(section.id, 'content')}>{t('courseContent.blockText')}</Button>
-                          <Button variant="ghost" size="xs" icon={ListChecks} onClick={() => addNewLesson(section.id, 'quiz')}>{t('courseContent.blockQuiz')}</Button>
+                      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-3 border-b border-line bg-surface/70">
+                        <span className="text-sm font-medium text-brand">{t('courseContent.lessonContent')}</span>
+                        <div className="flex gap-2">
+                          <Button variant="primary" size="xs" icon={Plus} onClick={() => addNewLesson(section.id, 'content')}>{t('courseContent.addLesson')}</Button>
+                          <Button variant="primary" size="xs" icon={ListChecks} onClick={() => addNewLesson(section.id, 'quiz')}>{t('courseContent.blockQuiz')}</Button>
                         </div>
                       </div>
                     )}
                     {sectionLessons.length ? (
-                      <div className="flex gap-1.5 px-3 py-2">
-                        <Button variant="ghost" size="xs" icon={Plus} onClick={() => addNewLesson(section.id, 'content')}>{t('courseContent.addLesson')}</Button>
-                        <Button variant="ghost" size="xs" icon={ListChecks} onClick={() => addNewLesson(section.id, 'quiz')}>{t('courseContent.blockQuiz')}</Button>
+                      <div className="flex gap-2">
+                        <Button variant="primary" size="xs" icon={Plus} onClick={() => addNewLesson(section.id, 'content')}>{t('courseContent.addLesson')}</Button>
+                        <Button variant="primary" size="xs" icon={ListChecks} onClick={() => addNewLesson(section.id, 'quiz')}>{t('courseContent.blockQuiz')}</Button>
                       </div>
                     ) : null}
                   </div>
@@ -548,22 +548,21 @@ function LessonEditor({ lessonId, onClose, onDeleted }) {
         <Checkbox checked={preview} onChange={(event) => setPreview(event.target.checked)} label={t('courseContent.lessonFreePreview')} />
 
         {lesson.type === 'content' ? (
-          <div className="rounded-xl border border-line">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface/70 px-3 py-2">
-              <span className="text-xs font-semibold text-ink">{t('courseContent.lessonContent')}</span>
+          <div className="rounded-xl border border-line border-brand bg-brand-soft">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-b border-line bg-surface/70 px-3 py-2">
+              <span className="text-sm font-medium text-brand">{t('courseContent.lessonContent')}</span>
               <Select
                 value=""
                 onChange={(event) => { if (event.target.value) { addBlock(lesson.id, event.target.value); success(t('courseContent.itemSaved')) } }}
-                className="h-8 w-auto min-w-32 py-1 text-[11px]"
+                className="h-9 w-auto min-w-[200px] py-1.5 text-[11px] text-brand"
               >
                 <option value="">{t('courseContent.addBlock')}</option>
                 <option value="richtext">{t('courseContent.blockText')}</option>
                 <option value="video">{t('courseContent.blockVideo')}</option>
-                <option value="youtube">{t('courseContent.blockVideo')}</option>
                 <option value="file">{t('courseContent.blockFile')}</option>
-                <option value="pdf">{t('courseContent.blockFile')}</option>
+                <option value="pdf">{t('courseContent.blockPdf')}</option>
                 <option value="image">{t('courseContent.blockImage')}</option>
-                <option value="gdrive">{t('courseContent.blockFile')}</option>
+                <option value="gdrive">{t('courseContent.blockGdrive')}</option>
               </Select>
             </div>
             {blocks.length ? (
@@ -635,54 +634,56 @@ function QuizEditor({ quizDraft, setQuizDraft, addQuestion, updateQuestion, upda
   if (!quizDraft) return null
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-[1fr_100px_100px_100px]">
-        <div><Label>{t('courseContent.quizTitle')}</Label><Input value={quizDraft.title} onChange={(event) => setQuizDraft({ ...quizDraft, title: event.target.value })} /></div>
-        <div><Label>{t('courseContent.passScore')}</Label><Input type="number" value={quizDraft.passingScore} onChange={(event) => setQuizDraft({ ...quizDraft, passingScore: Number(event.target.value) })} /></div>
-        <div><Label>{t('courseContent.timeLimit')}</Label><Input type="number" min="0" value={quizDraft.timeLimitMin} onChange={(event) => setQuizDraft({ ...quizDraft, timeLimitMin: Number(event.target.value) })} /><p className="mt-1 text-[10px] text-muted">{quizDraft.timeLimitMin ? '' : t('courseContent.timeLimitNone')}</p></div>
-        <div><Label>{t('courseContent.attempts')}</Label><Input type="number" min="0" value={quizDraft.maxAttempts} onChange={(event) => setQuizDraft({ ...quizDraft, maxAttempts: Number(event.target.value) })} /><p className="mt-1 text-[10px] text-muted">{quizDraft.maxAttempts ? '' : t('courseContent.attemptsUnlimited')}</p></div>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div><Label>{t('courseContent.quizDescription')} (FR)</Label><Textarea rows={2} value={quizDraft.descriptionFr} onChange={(event) => setQuizDraft({ ...quizDraft, descriptionFr: event.target.value })} /></div>
-        <div><Label>{t('courseContent.quizDescription')} (AR)</Label><Textarea rows={2} dir="rtl" value={quizDraft.descriptionAr} onChange={(event) => setQuizDraft({ ...quizDraft, descriptionAr: event.target.value })} /></div>
-      </div>
-      <Badge tone="neutral">{t('courseContent.questions')}: {quizDraft.questions.length}</Badge>
-      <div className="space-y-3">
-        {quizDraft.questions.map((question, questionIndex) => (
-          <div key={question.id} className="rounded-xl border border-line p-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="grid h-6 w-6 place-items-center rounded-lg bg-brand-soft text-[10px] font-bold text-brand">{questionIndex + 1}</span>
-              <Select value={question.type} onChange={(event) => updateQuestion(questionIndex, { type: event.target.value })} className="h-8 w-auto min-w-32 py-1 text-[11px]">
-                <option value="single">{t('courseContent.typeSingle')}</option>
-                <option value="multiple">{t('courseContent.typeMultiple')}</option>
-                <option value="boolean">{t('courseContent.typeTrueFalse')}</option>
-              </Select>
-              <Input type="number" value={question.points} onChange={(event) => updateQuestion(questionIndex, { points: Number(event.target.value) })} className="h-8 w-20 py-1 text-[11px]" />
-              <button type="button" onClick={() => removeQuestion(questionIndex)} className="ms-auto grid h-7 w-7 place-items-center rounded text-muted hover:bg-danger-soft hover:text-danger"><Trash2 size={13} /></button>
+      <div className="rounded-xl border border-line border-brand bg-brand-soft p-4">
+        <div className="grid gap-3 sm:grid-cols-[1fr_100px_100px_100px]">
+          <div><Label className="text-sm font-medium text-brand">{t('courseContent.quizTitle')}</Label><Input value={quizDraft.title} onChange={(event) => setQuizDraft({ ...quizDraft, title: event.target.value })} placeholder={t('courseContent.questionPlaceholder')} /></div>
+          <div><Label className="text-sm font-medium text-brand">{t('courseContent.passScore')}</Label><Input type="number" value={quizDraft.passingScore} onChange={(event) => setQuizDraft({ ...quizDraft, passingScore: Number(event.target.value) })} /></div>
+          <div><Label className="text-sm font-medium text-brand">{t('courseContent.timeLimit')}</Label><Input type="number" min="0" value={quizDraft.timeLimitMin} onChange={(event) => setQuizDraft({ ...quizDraft, timeLimitMin: Number(event.target.value) })} /><p className="mt-1 text-[10px] text-muted">{quizDraft.timeLimitMin ? '' : t('courseContent.timeLimitNone')}</p></div>
+          <div><Label className="text-sm font-medium text-brand">{t('courseContent.attempts')}</Label><Input type="number" min="0" value={quizDraft.maxAttempts} onChange={(event) => setQuizDraft({ ...quizDraft, maxAttempts: Number(event.target.value) })} /><p className="mt-1 text-[10px] text-muted">{quizDraft.maxAttempts ? '' : t('courseContent.attemptsUnlimited')}</p></div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 mt-4">
+          <div><Label className="text-sm font-medium text-brand">{t('courseContent.quizDescription')} (FR)</Label><Textarea rows={2} value={quizDraft.descriptionFr} onChange={(event) => setQuizDraft({ ...quizDraft, descriptionFr: event.target.value })} placeholder={t('courseContent.textContentPlaceholder')} /></div>
+          <div><Label className="text-sm font-medium text-brand">{t('courseContent.quizDescription')} (AR)</Label><Textarea rows={2} dir="rtl" value={quizDraft.descriptionAr} onChange={(event) => setQuizDraft({ ...quizDraft, descriptionAr: event.target.value })} placeholder={t('courseContent.textContentPlaceholder')} /></div>
+        </div>
+        <Badge tone="neutral" className="mt-3 block text-sm font-medium text-brand">{t('courseContent.questions')}: {quizDraft.questions.length}</Badge>
+        <div className="mt-4 space-y-3">
+          {quizDraft.questions.map((question, questionIndex) => (
+            <div key={question.id} className="rounded-xl border border-line bg-brand-soft p-3">
+              <div className="flex items-center gap-2">
+                <span className="grid h-6 w-6 place-items-center rounded-md bg-brand text-[10px] font-bold text-white">{questionIndex + 1}</span>
+                <Select value={question.type} onChange={(event) => updateQuestion(questionIndex, { type: event.target.value })} className="h-9 w-auto min-w-36 py-2 text-[12px] font-medium text-brand border border-line">
+                  <option value="single">{t('courseContent.typeSingle')}</option>
+                  <option value="multiple">{t('courseContent.typeMultiple')}</option>
+                  <option value="boolean">{t('courseContent.typeTrueFalse')}</option>
+                </Select>
+                <Input type="number" value={question.points} onChange={(event) => updateQuestion(questionIndex, { points: Number(event.target.value) })} className="h-9 w-24 py-2 text-[12px] font-medium text-brand border border-line ml-2" />
+                <button type="button" onClick={() => removeQuestion(questionIndex)} className="grid h-6 w-6 place-items-center rounded text-muted hover:bg-danger-soft hover:text-danger"><Trash2 size={13} /></button>
+              </div>
+              <Input value={question.title} onChange={(event) => updateQuestion(questionIndex, { title: event.target.value })} placeholder={t('courseContent.questionPlaceholder')} className="mt-2 form-input" />
+              {question.type === 'boolean' ? (
+                <div className="mt-2 flex gap-3 text-xs">
+                  {['Vrai', 'Faux'].map((label, index) => (
+                    <label key={label} className="flex items-center gap-1.5"><input type="radio" name={`q-${question.id}`} checked={question.choices[index]?.correct} onChange={() => markCorrect(questionIndex, index)} className="accent-[var(--color-brand)]" /> {label}</label>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-2 space-y-1.5">
+                  {question.choices.map((choice, choiceIndex) => (
+                    <div key={choice.id} className="flex items-center gap-2">
+                      <input type={question.type === 'multiple' ? 'checkbox' : 'radio'} checked={Boolean(choice.correct)} onChange={() => markCorrect(questionIndex, choiceIndex)} className="h-4 w-4 accent-[var(--color-brand)] border border-line rounded" />
+                      <Input value={choice.text} onChange={(event) => updateChoice(questionIndex, choiceIndex, { text: event.target.value })} placeholder={t('courseContent.answerPlaceholder', { number: choiceIndex + 1 })} className="h-9 w-full py-2 text-[12px] font-medium text-brand border border-line ml-2" />
+                      {question.choices.length > 2 ? <button type="button" onClick={() => updateQuestion(questionIndex, { choices: question.choices.filter((_, i) => i !== choiceIndex) })} className="grid h-6 w-6 place-items-center rounded text-muted hover:bg-danger-soft hover:text-danger"><X size={12} /></button> : null}
+                    </div>
+                  ))}
+                  <Button variant="primary" size="xs" icon={Plus} onClick={() => updateQuestion(questionIndex, { choices: [...question.choices, { id: `c-${Date.now()}`, text: '', correct: false }] })} className="mt-2 w-full">{t('courseContent.addAnswer')}</Button>
+                </div>
+              )}
+              <Input value={question.explanation || ''} onChange={(event) => updateQuestion(questionIndex, { explanation: event.target.value })} placeholder={t('courseContent.explanationPlaceholder')} className="mt-2 form-input" />
             </div>
-            <Input value={question.title} onChange={(event) => updateQuestion(questionIndex, { title: event.target.value })} placeholder={t('courseContent.questionPlaceholder')} className="mt-2" />
-            {question.type === 'boolean' ? (
-              <div className="mt-2 flex gap-4 text-xs">
-                {['Vrai', 'Faux'].map((label, index) => (
-                  <label key={label} className="flex items-center gap-1.5"><input type="radio" name={`q-${question.id}`} checked={question.choices[index]?.correct} onChange={() => markCorrect(questionIndex, index)} className="accent-[var(--color-brand)]" /> {label}</label>
-                ))}
-              </div>
-            ) : (
-              <div className="mt-2 space-y-1.5">
-                {question.choices.map((choice, choiceIndex) => (
-                  <div key={choice.id} className="flex items-center gap-2">
-                    <input type={question.type === 'multiple' ? 'checkbox' : 'radio'} checked={Boolean(choice.correct)} onChange={() => markCorrect(questionIndex, choiceIndex)} className="h-3.5 w-3.5 accent-[var(--color-brand)]" />
-                    <Input value={choice.text} onChange={(event) => updateChoice(questionIndex, choiceIndex, { text: event.target.value })} placeholder={t('courseContent.answerPlaceholder', { number: choiceIndex + 1 })} className="h-8 py-1 text-[11px]" />
-                    {question.choices.length > 2 ? <button type="button" onClick={() => updateQuestion(questionIndex, { choices: question.choices.filter((_, i) => i !== choiceIndex) })} className="grid h-7 w-7 shrink-0 place-items-center rounded text-muted hover:text-danger"><X size={12} /></button> : null}
-                  </div>
-                ))}
-                <Button variant="ghost" size="xs" icon={Plus} onClick={() => updateQuestion(questionIndex, { choices: [...question.choices, { id: `c-${Date.now()}`, text: '', correct: false }] })}>{t('courseContent.addAnswer')}</Button>
-              </div>
-            )}
-            <Input value={question.explanation || ''} onChange={(event) => updateQuestion(questionIndex, { explanation: event.target.value })} placeholder={t('courseContent.explanationPlaceholder')} className="mt-2 h-8 py-1 text-[11px]" />
-          </div>
-        ))}
-        <Button variant="secondary" icon={Plus} onClick={addQuestion}>{t('courseContent.addQuestion')}</Button>
+          ))}
+        </div>
       </div>
+      <Button variant="secondary" icon={Plus} onClick={addQuestion}>{t('courseContent.addQuestion')}</Button>
     </div>
   )
 }

@@ -89,7 +89,7 @@ export default function TrainerCourses() {
   const [sort, setSort] = useState('newest')
   const [view, setView] = useState('grid')
   const [newOpen, setNewOpen] = useState(false)
-  const [form, setForm] = useState({ title: '', category: 'DÃ©veloppement', language: 'fr', difficulty: 'beginner', isFree: false, priceDA: 3900, shortDescription: '' })
+  const [form, setForm] = useState({ title: '', category: 'Développement', language: 'fr', difficulty: 'beginner', isFree: false, priceDA: 3900, shortDescription: '' })
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [duplicateTarget, setDuplicateTarget] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -133,7 +133,7 @@ export default function TrainerCourses() {
     if (!result.ok) return toastError(t(`errors.${result.error}`))
     success(t('courseEditor.saved'))
     setNewOpen(false)
-    setForm({ title: '', category: 'DÃ©veloppement', language: 'fr', difficulty: 'beginner', isFree: false, priceDA: 3900, shortDescription: '' })
+    setForm({ title: '', category: 'Développement', language: 'fr', difficulty: 'beginner', isFree: false, priceDA: 3900, shortDescription: '' })
     navigate(`/trainer/courses/${result.course.id}`)
   }
 
@@ -341,8 +341,8 @@ export default function TrainerCourses() {
           <div><Label required>{t('courseEditor.courseTitle')}</Label><Input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder={t('courseEditor.courseTitlePlaceholder')} /></div>
           <div><Label>{t('courseEditor.shortDescription')}</Label><Textarea rows={2} value={form.shortDescription} onChange={(event) => setForm({ ...form, shortDescription: event.target.value })} placeholder={t('courseEditor.shortDescriptionPlaceholder')} /></div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div><Label>{t('courseEditor.category')}</Label><Select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>{['DÃ©veloppement', 'Design', 'Business', 'Langues', 'Gestion', 'Autre'].map((item) => <option key={item}>{item}</option>)}</Select></div>
-            <div><Label>{t('courseEditor.language')}</Label><Select value={form.language} onChange={(event) => setForm({ ...form, language: event.target.value })}><option value="fr">FranÃ§ais</option><option value="ar">Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©</option></Select></div>
+            <div><Label>{t('courseEditor.category')}</Label><Select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>{['Développement', 'Design', 'Business', 'Langues', 'Gestion', 'Autre'].map((item) => <option key={item}>{item}</option>)}</Select></div>
+            <div><Label>{t('courseEditor.language')}</Label><Select value={form.language} onChange={(event) => setForm({ ...form, language: event.target.value })}><option value="fr">Francais</option><option value="ar">Arabic</option></Select></div>
             <div><Label>{t('courseEditor.level')}</Label><Select value={form.difficulty} onChange={(event) => setForm({ ...form, difficulty: event.target.value })}><option value="beginner">{t('publicSite.levelBeginner')}</option><option value="intermediate">{t('publicSite.levelIntermediate')}</option><option value="advanced">{t('publicSite.levelAdvanced')}</option></Select></div>
             <div><Label>{t('courseEditor.priceDA')}</Label><Input type="number" value={form.isFree ? 0 : form.priceDA} disabled={form.isFree} onChange={(event) => setForm({ ...form, priceDA: Number(event.target.value) })} /></div>
           </div>

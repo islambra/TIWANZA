@@ -126,7 +126,7 @@ export function TrainerSchool() {
             <div><Label required hint={t('trainerSchool.slugHint')}>{t('trainerSchool.slug')}</Label><div className="relative"><Input value={form.slug} onChange={(event) => { set('slug', event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')); setSlugStatus(null) }} onBlur={checkSlug} className="pe-20" /><span className="absolute end-3 top-1/2 -translate-y-1/2 text-[10px] text-muted">.tiwanza.com</span></div>{slugStatus ? <p className={cn('mt-1 text-[10px]', slugStatus === 'available' ? 'text-success' : 'text-danger')}>{slugStatus === 'available' ? t('trainerSchool.slugAvailable') : t('trainerSchool.slugTaken')}</p> : null}</div>
             <div><Label>{t('trainerSchool.category')}</Label><Input value={form.category} onChange={(event) => set('category', event.target.value)} placeholder="Développement, Design, Langues..." /></div>
             <div className="sm:col-span-2"><Label>{t('trainerSchool.description')}</Label><Textarea rows={4} value={form.description} onChange={(event) => set('description', event.target.value)} placeholder={t('trainerSchool.descriptionPlaceholder')} /></div>
-            <div><Label>{t('trainerSchool.language')}</Label><Select value={form.language} onChange={(event) => set('language', event.target.value)}><option value="fr">Français</option><option value="ar">العربية</option></Select></div>
+            <div><Label>{t('trainerSchool.language')}</Label><Select value={form.language} onChange={(event) => set('language', event.target.value)}><option value="fr">Francais</option><option value="ar">Arabic</option></Select></div>
             <div><Label>{t('trainerSchool.primaryColor')}</Label><div className="flex items-center gap-2"><input type="color" value={form.brandAccent} onChange={(event) => set('brandAccent', event.target.value)} className="h-10 w-12 cursor-pointer rounded-lg border border-line bg-white p-1" /><Input value={form.brandAccent} onChange={(event) => set('brandAccent', event.target.value)} className="flex-1" /></div></div>
           </div>
         </Card>
@@ -399,7 +399,7 @@ export function TrainerProfile() {
             <div className="sm:col-span-2"><Label>{t('learner.fullName')}</Label><Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></div>
             <div className="sm:col-span-2"><Label hint={t('learner.emailNotEditable')}>{t('learner.email')}</Label><Input value={user.email} disabled /></div>
             <div><Label>{t('learner.phone')}</Label><Input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /></div>
-            <div><Label>{t('learner.language')}</Label><Select value={form.language} onChange={(event) => setForm({ ...form, language: event.target.value })}><option value="fr">Français</option><option value="ar">العربية</option></Select></div>
+            <div><Label>{t('learner.language')}</Label><Select value={form.language} onChange={(event) => setForm({ ...form, language: event.target.value })}><option value="fr">Francais</option><option value="ar">Arabic</option></Select></div>
             <div className="sm:col-span-2"><Button onClick={saveProfile}>{t('learner.saveProfile')}</Button></div>
           </div>
         </Card>

@@ -54,15 +54,15 @@ import {
 } from '../../components/ui.jsx'
 import { cn } from '../../lib/utils.js'
 
-export const BLOCK_ICONS = { richtext: FileText, video: Video, pdf: FileUp, file: FileUp, image: ImageIcon, youtube: Video, gdrive: Link2 }
+export const BLOCK_ICONS = { richtext: FileText, video: Video, pdf: FileUp, file: FileUp, image: ImageIcon, gdrive: Link2 }
 export const BLOCK_LABEL_KEYS = {
-  richtext: 'courseContent.blockText',
+richtext: 'courseContent.blockText',
   video: 'courseContent.blockVideo',
-  pdf: 'courseContent.blockFile',
+  pdf: 'courseContent.blockPdf',
   file: 'courseContent.blockFile',
   image: 'courseContent.blockImage',
-  youtube: 'courseContent.blockVideo',
-  gdrive: 'courseContent.blockFile',
+  gdrive: 'courseContent.blockGdrive',
+}
 }
 
 export const READINESS_CHECKS = [
@@ -156,7 +156,7 @@ export function CourseInfoFields({ form, setForm }) {
         <div className="sm:col-span-2"><Label required>{t('courseEditor.shortDescription')}</Label><Textarea rows={2} value={form.shortDescription} onChange={(event) => setForm({ ...form, shortDescription: event.target.value })} placeholder={t('courseEditor.shortDescriptionPlaceholder')} /><p className="mt-1 text-[10px] text-muted">{t('courseEditor.shortDescriptionHint')}</p></div>
         <div className="sm:col-span-2"><Label required>{t('courseEditor.description')}</Label><Textarea rows={5} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder={t('courseEditor.descriptionPlaceholder')} /></div>
         <div><Label>{t('courseEditor.category')}</Label><Select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>{CATEGORIES.map((item) => <option key={item}>{item}</option>)}</Select></div>
-        <div><Label>{t('courseEditor.language')}</Label><Select value={form.language} onChange={(event) => setForm({ ...form, language: event.target.value })}><option value="fr">Français</option><option value="ar">العربية</option></Select></div>
+        <div><Label>{t('courseEditor.language')}</Label><Select value={form.language} onChange={(event) => setForm({ ...form, language: event.target.value })}><option value="fr">Francais</option><option value="ar">Arabic</option></Select></div>
         <div><Label>{t('courseEditor.level')}</Label><Select value={form.difficulty} onChange={(event) => setForm({ ...form, difficulty: event.target.value })}><option value="beginner">{t('publicSite.levelBeginner')}</option><option value="intermediate">{t('publicSite.levelIntermediate')}</option><option value="advanced">{t('publicSite.levelAdvanced')}</option></Select></div>
         <div><Label>{t('courseEditor.coverImage')}</Label><Input value={form.coverImage} onChange={(event) => setForm({ ...form, coverImage: event.target.value })} placeholder="https://..." /></div>
         <div><Label>{t('courseEditor.coverLabel')}</Label><Input value={form.coverLabel} onChange={(event) => setForm({ ...form, coverLabel: event.target.value.toUpperCase() })} placeholder="REACT" /></div>
@@ -434,18 +434,17 @@ export function LessonEditor({ lessonId, onClose, onDeleted }) {
         <Checkbox checked={preview} onChange={(event) => setPreview(event.target.checked)} label={t('courseContent.lessonFreePreview')} />
 
         {lesson.type === 'content' ? (
-          <div className="rounded-xl border border-line">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface/70 px-3 py-2">
-              <span className="text-xs font-semibold text-ink">{t('courseContent.lessonContent')}</span>
-              <Select value="" onChange={(event) => { if (event.target.value) { addBlock(lesson.id, event.target.value); success(t('courseContent.itemSaved')) } }} className="h-8 w-auto min-w-32 py-1 text-[11px]">
+          <div className="rounded-xl border border-line border-brand bg-brand-soft">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-b border-line bg-surface/70 px-3 py-2">
+              <span className="text-sm font-medium text-brand">{t('courseContent.lessonContent')}</span>
+              <Select value="" onChange={(event) => { if (event.target.value) { addBlock(lesson.id, event.target.value); success(t('courseContent.itemSaved')) } }} className="h-9 w-auto min-w-[200px] py-1.5 text-[11px] text-brand">
                 <option value="">{t('courseContent.addBlock')}</option>
                 <option value="richtext">{t('courseContent.blockText')}</option>
                 <option value="video">{t('courseContent.blockVideo')}</option>
-                <option value="youtube">{t('courseContent.blockVideo')}</option>
                 <option value="file">{t('courseContent.blockFile')}</option>
-                <option value="pdf">{t('courseContent.blockFile')}</option>
+                <option value="pdf">{t('courseContent.blockPdf')}</option>
                 <option value="image">{t('courseContent.blockImage')}</option>
-                <option value="gdrive">{t('courseContent.blockFile')}</option>
+                <option value="gdrive">{t('courseContent.blockGdrive')}</option>
               </Select>
             </div>
             {blocks.length ? (

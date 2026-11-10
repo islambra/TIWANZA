@@ -289,6 +289,8 @@ export const arTrainer = {
     blockText: 'نص',
     blockVideo: 'فيديو',
     blockFile: 'ملف',
+    blockPdf: 'PDF',
+    blockGdrive: 'Gdrive',
     blockImage: 'صورة',
     blockQuiz: 'اختبار',
     blockLive: 'جلسة مباشرة',

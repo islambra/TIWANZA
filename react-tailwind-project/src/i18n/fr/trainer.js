@@ -289,6 +289,8 @@ export const frTrainer = {
     blockText: 'Texte',
     blockVideo: 'Vidéo',
     blockFile: 'Fichier',
+    blockPdf: 'PDF',
+    blockGdrive: 'Gdrive',
     blockImage: 'Image',
     blockQuiz: 'Quiz',
     blockLive: 'Session live',
