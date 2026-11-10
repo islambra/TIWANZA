@@ -1,0 +1,29 @@
+{
+  "name": "tiwanza-lms-prototype",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tiwanza LMS interactive workflow prototype (frontend, mock data only)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "vite",
+    "lint": "node scripts/check-imports.mjs"
+  },
+  "keywords": ["tiwanza", "lms", "prototype"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@vitejs/plugin-react": "^6.3.0",
+    "autoprefixer": "^10.6.2",
+    "lucide-react": "^0.542.0",
+    "postcss": "^8.5.32",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.8.0",
+    "tailwindcss": "^4.3.5",
+    "vite": "^8.3.7"
+  }
+}
