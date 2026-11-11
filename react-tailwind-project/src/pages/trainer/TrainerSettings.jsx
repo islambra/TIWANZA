@@ -209,7 +209,7 @@ export function TrainerSchool() {
       </Card>
 
       <Card>
-        <CardHeader title={t('customDomain.title')} description={t('customDomain.subtitle')} />
+        <CardHeader title={t('customDomain.title')} description={t('customDomain.subtitle')} className="space-y-1.5" />
         <div className="p-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
@@ -219,20 +219,21 @@ export function TrainerSchool() {
                 value={form.customDomain || ''}
                 onChange={(event) => set('customDomain', event.target.value)}
                 disabled={verifying}
-                className="w-full"
+                className="w-full rounded border-base input-sm"
+                style={{ borderColor: verifying ? '#3b82f6' : '#d1d5db' }}
               />
             </div>
             <div>
-              <Button variant="primary" onClick={connectDomain} disabled={verifying}>
+              <Button variant="primary" onClick={connectDomain} disabled={verifying} className="btn-primary">
                 {verifying ? t('customDomain.verify') : t('customDomain.addDomain')}
               </Button>
             </div>
           </div>
           {status === 'connected' && (
-            <div className="mt-4 p-3 bg-surface rounded">
-              <Badge tone="success">{t('customDomain.connected')}</Badge>
-              <p className="mt-1 text-[10px] text-muted">{t('customDomain.verifiedDesc', { domain: form.customDomain })}</p>
-              <div className="mt-2 flex items-center gap-2">
+            <div className="mt-4 p-4 bg-surface rounded border border-line">
+              <Badge tone="success" className="me-2">{t('customDomain.connected')}</Badge>
+              <p className="mt-2 text-[10px] text-muted">{t('customDomain.verifiedDesc', { domain: form.customDomain })}</p>
+              <div className="mt-3 flex items-center gap-2">
                 <Button variant="secondary" size="sm" onClick={() => copyToClipboard(form.customDomain)}>
                   {t('customDomain.copyDomain')}
                 </Button>

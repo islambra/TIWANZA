@@ -133,7 +133,11 @@ export function CustomDomain() {
 
       <div className="space-y-4">
         <Card>
-          <CardHeader title={t('customDomain.status')} description={t(`customDomain.${status}.desc`)} />
+          <CardHeader
+                  title={t('customDomain.status')}
+                  description={t(`customDomain.${status}.desc`)}
+                  className="space-y-1.5"
+                />
           <div className="p-5">
             <div className="grid gap-4 sm:grid-cols-2">
               {status === 'not-connected' ? (
@@ -144,10 +148,16 @@ export function CustomDomain() {
                     value={form.domain}
                     onChange={handleDomainChange}
                     disabled={verifying}
-                    className="w-full"
+                    className="w-full rounded border-base input-sm"
+                    style={{ borderColor: verifying ? '#3b82f6' : '#d1d5db' }}
                     hint={t('customDomain.hint')}
                   />
-                  <Button variant="primary" onClick={connectDomain} disabled={verifying}>
+                  <Button
+                    variant="primary"
+                    onClick={connectDomain}
+                    disabled={verifying}
+                    className="btn-primary"
+                  >
                     {verifying ? t('customDomain.verify') : t('customDomain.addDomain')}
                   </Button>
                 </div>
