@@ -48,7 +48,8 @@ export default function PublicLayout() {
           <div className="flex items-center gap-2">
             <IconButton label={t('common.language')} onClick={toggleLanguage} size="sm" variant="outline">
               <Languages size={15} />
-              <span className="sr-only">{language}</span>
+              <span className="sr-only">{language === 'fr' ? 'French' : language === 'ar' ? 'Arabic' : 'English'}</span>
+              <span className="text-xs font-bold uppercase hidden sm:inline">{language === 'fr' ? 'FR' : language === 'ar' ? 'AR' : 'EN'}</span>
             </IconButton>
             {isAuthenticated ? (
               <Button size="sm" onClick={() => { window.location.href = home }} className="hidden sm:inline-flex">

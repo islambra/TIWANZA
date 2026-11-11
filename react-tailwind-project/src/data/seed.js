@@ -31,38 +31,22 @@ export function createSeedData() {
     { id: 'u-l8', name: 'Rania Guerroudj', email: 'rania@example.dz', password: 'demo1234', role: 'learner', schoolId: 's-code', language: 'fr', status: 'active', createdAt: at(-20), lastActiveAt: at(-6) },
   ]
 
-  const plans = [
-    {
-      id: 'plan-free',
-      code: 'free',
-      nameFr: 'Gratuit',
-      nameAr: 'مجاني',
-      descFr: 'Pour lancer votre première formation et découvrir Tiwanza.',
-      descAr: 'لإطلاق أول دورة تدريبية واكتشاف تيوانزا.',
-      priceDA: 0,
-      period: 'month',
-      samplePricing: false,
-      enabled: true,
-      order: 1,
-      limits: { publishedCourses: 2, paidCourses: 1, learners: 50, storageGb: 2 },
-      featuresFr: ['2 cours publiés', '1 cours payant', '50 apprenants inscrits', '2 Go de stockage vidéo natif', 'Site école public', 'Paiements manuels'],
-      featuresAr: ['دورتان منشورتان', 'دورة مدفوعة واحدة', '50 متعلماً', '2 غيغابايت لتخزين الفيديو', 'موقع مدرسة عام', 'مدفوعات يدوية'],
-    },
+const plans = [
     {
       id: 'plan-pro',
       code: 'pro',
-      nameFr: 'Pro',
-      nameAr: 'برو',
-      descFr: 'Pour développer une école en ligne complète et sans limite.',
-      descAr: 'لتطوير مدرسة إلكترونية كاملة دون حدود.',
+      nameFr: 'Abonnement Payant',
+      nameAr: 'اشتراك مدفوع',
+      descFr: 'Abonnement payant configurable pour votre école.',
+      descAr: 'اشتراك مدفوع قابل للتكوين لمدرستك.',
       priceDA: 4900,
       period: 'month',
       samplePricing: true,
       enabled: true,
-      order: 2,
+      order: 1,
       limits: { publishedCourses: -1, paidCourses: -1, learners: -1, storageGb: 50 },
       featuresFr: ['Cours publiés illimités', 'Cours payants illimités', 'Apprenants illimités', '50 Go de stockage vidéo natif', 'Site école personnalisé', 'Sessions live & calendrier', 'Support prioritaire'],
-      featuresAr: ['دورات منشورة غير محدودة', 'دورات مدفوعة غير محدودة', 'متعلقون غير محدودين', '50 غيغابايت لتخزين الفيديو', 'موقع مدرسة مخصص', 'حصص مباشرة وتقويم', 'دعم ذو أولوية'],
+      featuresAr: ['دورات منشورة غير محدودة', 'دورات مدفوعة غير محدودة', 'متعلقون غير محدودين', '50 غيغابايت لتخزين الفيديو', 'موقعschool مخصص', 'حصص مباشرة وتقويم', 'دعم ذو أولوية'],
     },
   ]
 
@@ -181,17 +165,17 @@ export function createSeedData() {
     },
   ]
 
-  const trainerProfiles = [
+const trainerProfiles = [
     { id: 'tp-nour', userId: 'u-t1', schoolId: 's-nour', bio: 'Développeur full-stack et formateur depuis 8 ans. J’aime rendre le code accessible et concret.', headline: 'Développement web & produit', onboardingComplete: true, planId: 'plan-pro', subscriptionId: 'sub-nour', createdAt: at(-100) },
-    { id: 'tp-code', userId: 'u-t2', schoolId: 's-code', bio: 'Ingénieure logiciel et pédagogie avant tout. J’accompagne les débutants vers leur premier projet.', headline: 'Python, Git & bonnes pratiques', onboardingComplete: true, planId: 'plan-free', subscriptionId: 'sub-code', createdAt: at(-80) },
-    { id: 'tp-langue', userId: 'u-t3', schoolId: 's-langue', bio: 'أستاذ لغات منذ 10 سنوات، أؤمن أن التعلم يبدأ بالثقة والتطبيق اليومي.', headline: 'الفرنسية والإنجليزية للمبتدئين', onboardingComplete: true, planId: 'plan-pro', subscriptionId: 'sub-langue', createdAt: at(-70) },
+    { id: 'tp-code', userId: 'u-t2', schoolId: 's-code', bio: 'Ingénieure logiciel et pédagogie avant tout. J’accompagne les débutants vers leur premier projet.', headline: 'Python, Git & bonnes pratiques', onboardingComplete: true, planId: 'plan-pro', subscriptionId: 'sub-code', createdAt: at(-80) },
+    { id: 'tp-langue', userId: 'u-t3', schoolId: 's-langue', bio: 'أستاذ لغات منذ 10 سنوات، أؤمن أن التعلم begins بالثقة والتطبيق اليومي.', headline: 'الفرنسية والإنجليزية للمبتدئين', onboardingComplete: true, planId: 'plan-pro', subscriptionId: 'sub-langue', createdAt: at(-70) },
     { id: 'tp-fajr', userId: 'u-t4', schoolId: 's-fajr', bio: 'Expert-comptable et formateur en gestion d’entreprise.', headline: 'Gestion & comptabilité', onboardingComplete: true, planId: 'plan-pro', subscriptionId: 'sub-fajr', createdAt: at(-6) },
-    { id: 'tp-nadia', userId: 'u-t5', schoolId: null, bio: '', headline: '', onboardingComplete: false, planId: null, subscriptionId: null, createdAt: at(-1) },
+    { id: 'tp-nadia', userId: 'u-t5', schoolId: null, bio: '', headline: '', onboardingComplete: false, planId: 'plan-pro', subscriptionId: null, createdAt: at(-1) },
   ]
 
   const subscriptions = [
     { id: 'sub-nour', trainerId: 'u-t1', planId: 'plan-pro', status: 'active', startedAt: at(-20), endsAt: at(10), amount: 4900, method: 'online', createdAt: at(-20), cancelledAt: null },
-    { id: 'sub-code', trainerId: 'u-t2', planId: 'plan-free', status: 'active', startedAt: at(-80), endsAt: at(280), amount: 0, method: 'free', createdAt: at(-80), cancelledAt: null },
+    { id: 'sub-code', trainerId: 'u-t2', planId: 'plan-pro', status: 'active', startedAt: at(-80), endsAt: at(280), amount: 4900, method: 'online', createdAt: at(-80), cancelledAt: null },
     { id: 'sub-langue', trainerId: 'u-t3', planId: 'plan-pro', status: 'expired', startedAt: at(-50), endsAt: at(-5), amount: 4900, method: 'manual', createdAt: at(-50), cancelledAt: null },
     { id: 'sub-fajr', trainerId: 'u-t4', planId: 'plan-pro', status: 'pending', startedAt: null, endsAt: null, amount: 4900, method: 'manual', createdAt: at(-1), cancelledAt: null },
   ]

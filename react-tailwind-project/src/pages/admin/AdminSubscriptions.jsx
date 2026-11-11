@@ -28,9 +28,10 @@ import {
   getTrainerProfile,
 } from '../../data/selectors.js'
 import {
-  approveSubscriptionPayment,
+  activateSubscription,
   cancelSubscription,
   rejectSubscriptionPayment,
+  setSubscriptionStatus,
 } from '../../data/services.js'
 import { Alert, Avatar, Badge, Button, Card, CardHeader, ConfirmDialog, EmptyState, Modal, PageHeader, SearchField, StatCard, Table, Tabs, Textarea } from '../../components/ui.jsx'
 import { StatusPill } from './AdminDashboard.jsx'
@@ -47,6 +48,7 @@ export function AdminSubscriptions() {
   const [reason, setReason] = useState('')
   const [receiptTarget, setReceiptTarget] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [configureTarget, setConfigureTarget] = useState(null)
 
   const rows = useMemo(() => {
     return state.subscriptions
@@ -122,6 +124,42 @@ export function AdminSubscriptions() {
     success(t('adminSubscriptions.cancelSuccess'))
   }
 
+  function handleSuspend(row) {
+    setSubscriptionStatus(row.subscription.trainerId, 'suspended')
+    success(t('adminSubscriptions.suspendSuccess'))
+  }
+
+  function handleReactivate(row) {
+    setSubscriptionStatus(row.subscription.trainerId, 'active')
+    success(t('adminSubscriptions.reactivateSuccess'))
+  }
+
+  function handleConfigure(row) {
+    setConfigureTarget(row)
+  }
+
+  function handleSaveConfigure() {
+    if (!configureTarget) return
+    // Configure subscription price and duration
+    const { priceDA, durationMonths } = configureTarget
+    setSubscriptionStatus(configureTarget.trainerId, 'active')
+    // Update subscription with new price and set endsAt based on duration
+    const now = new Date()
+    const subscription = state.subscriptions.find((item) => item.id === configureTarget.subscriptionId)
+    if (subscription) {
+      subscription.amount = priceDA || subscription.amount
+      if (durationMonths) {
+        subscription.endsAt = new Date(now.getTime() + durationMonths * 30 * 86400000).toISOString()
+      }
+      success(t('adminSubscriptions.configureSuccess'))
+    }
+    setConfigureTarget(null)
+  }
+
+  function handleCancelConfigure() {
+    setConfigureTarget(null)
+  }
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -182,8 +220,10 @@ export function AdminSubscriptions() {
                       <button type="button" onClick={() => setReceiptTarget(row)} className="font-mono text-[10px] text-brand hover:underline" dir="ltr">{row.latestPayment.reference}</button>
                     ) : <span className="text-[10px] text-muted">—</span>}
                   </td>
-                  <td><StatusPill status={row.subscription.status} t={t} /></td>
                   <td>
+                    <StatusPill status={row.subscription.status} t={t} />
+                  </td>
+                  <td className="text-end">
                     <div className="flex items-center justify-end gap-1">
                       {row.latestPayment?.proofName || row.latestPayment ? (
                         <Button variant="ghost" size="xs" icon={Receipt} onClick={() => setReceiptTarget(row)}>{t('adminSubscriptions.viewReceipt')}</Button>
@@ -193,7 +233,13 @@ export function AdminSubscriptions() {
                           <Button variant="success" size="xs" icon={CheckCircle2} onClick={() => setApproveTarget(row)}>{t('adminSubscriptions.approve')}</Button>
                           <Button variant="dangerSoft" size="xs" icon={XCircle} onClick={() => { setRejectTarget(row); setReason('') }}>{t('adminSubscriptions.reject')}</Button>
                         </>
-                      ) : row.school ? (
+                      ) : row.subscription.status === 'active' ? (
+                        <>
+                          <Button variant="dangerSoft" size="xs" icon={XCircle} onClick={() => { handleSuspend(row); setConfigureTarget(null) }}>{t('adminSubscriptions.suspend')}</Button>
+                          <Button variant="success" size="xs" icon={CheckCircle2} onClick={() => { handleReactivate(row); setConfigureTarget(null) }}>{t('adminSubscriptions.reactivate')}</Button>
+                        </>
+                      ) : null}
+                      {row.school ? (
                         <Link to={`/admin/schools/${row.school.id}`} className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand hover:underline">
                           {t('common.view')} <ArrowRight size={12} className="rtl:rotate-180" />
                         </Link>
@@ -211,6 +257,34 @@ export function AdminSubscriptions() {
             description={tab === 'pending' ? t('adminSubscriptions.noPendingDesc') : t('common.emptyDescription')}
           />
         )}
+
+        {configureTarget ? (
+          <Modal
+            open={true}
+            onClose={() => setConfigureTarget(null)}
+            title={t('adminSubscriptions.configureTitle')}
+            description={t('adminSubscriptions.configureDesc', { school: configureTarget.school?.name || '', plan: configureTarget.plan ? (language === 'ar' ? configureTarget.plan.nameAr : configureTarget.plan.nameFr) : '' })}
+            footer={<><Button variant="secondary" onClick={handleCancelConfigure}>{t('common.cancel')}</Button><Button variant="success" onClick={handleSaveConfigure}>{t('adminSubscriptions.configureSave')}</Button></>}
+          >
+            {configureTarget ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3 rounded-xl bg-surface p-3 text-xs">
+                  <Detail label={t('adminSubscriptions.tableSchool')} value={configureTarget.school?.name || '—'} />
+                  <Detail label={t('adminSubscriptions.tablePlan')} value={configureTarget.plan ? (language === 'ar' ? configureTarget.plan.nameAr : configureTarget.plan.nameFr) : '—'} />
+                  <Detail label={t('adminSubscriptions.tableAmount')} value={money(configureTarget.subscription?.amount || 0)} />
+                  <Detail label={t('adminSubscriptions.tableReference')} value={configureTarget.latestPayment?.reference || '—'} />
+                </div>
+                <Alert tone="info" icon={ShieldCheck}>{t('common.simulated')}</Alert>
+                <div className="mt-4 space-y-3">
+                  <label className="mb-1.5 block text-xs font-semibold text-ink">{t('adminSubscriptions.newPrice')}</label>
+                  <Input value={configureTarget.priceDA || ''} onChange={(event) => setConfigureTarget({ ...configureTarget, priceDA: Number(event.target.value) || undefined })} placeholder="4900" />
+                  <label className="mb-1.5 block text-xs font-semibold text-ink">{t('adminSubscriptions.newDuration')}</label>
+                  <Input value={configureTarget.durationMonths || ''} onChange={(event) => setConfigureTarget({ ...configureTarget, durationMonths: Number(event.target.value) || undefined })} placeholder="12" />
+                </div>
+              </div>
+            ) : null}
+          </Modal>
+        ) : null}
       </Card>
 
       <Modal

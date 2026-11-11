@@ -4,6 +4,12 @@ import { frAdmin } from './fr/admin.js'
 import { frTrainer } from './fr/trainer.js'
 import { frLearn } from './fr/learn.js'
 import { frExtras } from './fr/extras.js'
+import { enBase } from './en/base.js'
+import { enAccount } from './en/account.js'
+import { enAdmin } from './en/admin.js'
+import { enTrainer } from './en/trainer.js'
+import { enLearn } from './en/learn.js'
+import { enExtras } from './en/extras.js'
 import { arBase } from './ar/base.js'
 import { arAccount } from './ar/account.js'
 import { arAdmin } from './ar/admin.js'
@@ -24,5 +30,6 @@ function mergeSections(sections) {
 
 export const translations = {
   fr: mergeSections([frBase, frAccount, frAdmin, frTrainer, frLearn, frExtras]),
+  en: mergeSections([enBase, enAccount, enAdmin, enTrainer, enLearn, enExtras]),
   ar: mergeSections([arBase, arAccount, arAdmin, arTrainer, arLearn, arExtras]),
 }

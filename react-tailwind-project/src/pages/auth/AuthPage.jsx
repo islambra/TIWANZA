@@ -158,6 +158,7 @@ export default function AuthPage({ mode = 'login' }) {
     : role === 'trainer'
       ? t('auth.trainerRegisterSubtitle')
       : t('auth.learnerRegisterSubtitle')
+  const canCreateLearner = role !== 'trainer'
 
   if (isAuthenticated) {
     return (
@@ -272,7 +273,7 @@ export default function AuthPage({ mode = 'login' }) {
                   <Label htmlFor="email" required>{t('auth.email')}</Label>
                   <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('auth.emailPlaceholder')} icon={Mail} autoComplete="email" dir="ltr" />
                 </div>
-                {role === 'learner' ? (
+                {canCreateLearner ? (
                   <div>
                     <Label htmlFor="school" required>{t('auth.chooseSchool')}</Label>
                     <Select id="school" value={schoolId} onChange={(e) => setSchoolId(e.target.value)}>

@@ -70,10 +70,13 @@ function useTrainerSchool() {
 
 export function TrainerSchool() {
   const { user, state, school } = useTrainerSchool()
-  const { t } = useI18n()
+  const { t, money, date } = useI18n()
   const { success, error: toastError } = useToast()
   const [form, setForm] = useState(() => schoolForm(school))
   const [slugStatus, setSlugStatus] = useState(null)
+  const [verifying, setVerifying] = useState(false)
+  const [status, setStatus] = useState('not-connected')
+  const [sslStatus, setSslStatus] = useState(null)
 
   if (!school) return <EmptyState icon={Building2} title={t('trainerSchool.title')} description={t('trainerSchool.subtitle')} />
 
@@ -115,9 +118,57 @@ export function TrainerSchool() {
     reader.readAsDataURL(file)
   }
 
+  function connectDomain() {
+    const domain = form.customDomain?.trim()
+    if (!domain) return toastError(t('errors.requiredFields'))
+    if (!domain.includes('.')) return toastError(t('customDomain.errorInvalidDomain'))
+
+    setStatus('verifying')
+    setVerifying(true)
+
+    setTimeout(() => {
+      const isValid = domain.includes('.') && domain.length > 3
+      if (isValid) {
+        setStatus('connected')
+        setSslStatus('active')
+        success(t('customDomain.connected'))
+      } else {
+        setStatus('not-connected')
+        setSslStatus('error')
+        toastError(t('customDomain.errorVerificationFailed'))
+      }
+      setVerifying(false)
+    }, 1500)
+  }
+
+  function disconnectDomain() {
+    setStatus('not-connected')
+    setSslStatus(null)
+    success(t('customDomain.removeSuccess'))
+  }
+
+  function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => success(t('customDomain.copySuccess')))
+  }
+
   return (
     <div className="space-y-5">
-      <PageHeader eyebrow={t('nav.trainer')} title={t('trainerSchool.title')} description={t('trainerSchool.subtitle')} actions={<><Button variant="secondary" icon={ExternalLink} onClick={() => window.open(`/s/${school.slug}`, '_blank')}>{t('trainerSchool.viewSite')}</Button><Button onClick={save}>{t('trainerSchool.save')}</Button></>} />
+      <PageHeader
+        eyebrow={t('nav.trainer')}
+        title={t('trainerSchool.title')}
+        description={t('trainerSchool.subtitle')}
+        actions={
+          <><Button
+            variant="secondary"
+            icon={ExternalLink}
+            onClick={() => window.open(`/s/${school.slug}`, '_blank')}
+          >
+            {t('trainerSchool.viewSite')}
+          </Button>
+          <Button onClick={save}>{t('trainerSchool.save')}</Button></>
+        }
+      />
+
       <div className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
         <Card>
           <CardHeader title={t('trainerSchool.general')} description={t('trainerSchool.publicSiteDesc')} />
@@ -154,6 +205,44 @@ export function TrainerSchool() {
           <div><Label>{t('trainerSchool.email')}</Label><Input type="email" value={form.contactEmail} onChange={(event) => set('contactEmail', event.target.value)} /></div>
           <div><Label>{t('trainerSchool.phone')}</Label><Input value={form.contactPhone} onChange={(event) => set('contactPhone', event.target.value)} /></div>
           <div><Label>{t('trainerSchool.city')}</Label><Input value={form.city} onChange={(event) => set('city', event.target.value)} /></div>
+        </div>
+      </Card>
+
+      <Card>
+        <CardHeader title={t('customDomain.title')} description={t('customDomain.subtitle')} />
+        <div className="p-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label>{t('customDomain.domain')}</Label>
+              <Input
+                placeholder={t('customDomain.domainPlaceholder')}
+                value={form.customDomain || ''}
+                onChange={(event) => set('customDomain', event.target.value)}
+                disabled={verifying}
+                className="w-full"
+              />
+            </div>
+            <div>
+              <Button variant="primary" onClick={connectDomain} disabled={verifying}>
+                {verifying ? t('customDomain.verify') : t('customDomain.addDomain')}
+              </Button>
+            </div>
+          </div>
+          {status === 'connected' && (
+            <div className="mt-4 p-3 bg-surface rounded">
+              <Badge tone="success">{t('customDomain.connected')}</Badge>
+              <p className="mt-1 text-[10px] text-muted">{t('customDomain.verifiedDesc', { domain: form.customDomain })}</p>
+              <div className="mt-2 flex items-center gap-2">
+                <Button variant="secondary" size="sm" onClick={() => copyToClipboard(form.customDomain)}>
+                  {t('customDomain.copyDomain')}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={disconnectDomain} className="text-danger">
+                  {t('customDomain.removeDomain')}
+                </Button>
+              </div>
+            </div>
+          )}
+          {verifying && <p className="mt-2 text-[10px] text-muted">{t('customDomain.verifying')}...</p>}
         </div>
       </Card>
     </div>
@@ -269,10 +358,10 @@ export function TrainerSubscription() {
   const history = state.subscriptionPayments.filter((payment) => payment.trainerId === user.id).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))
   const remaining = subscription?.endsAt ? Math.max(0, Math.ceil((new Date(subscription.endsAt) - Date.now()) / 86400000)) : null
 
-  function activateFree() {
-    const result = activateFreePlan(user.id)
+  function activateSubscription() {
+    const result = activateSubscriptionPlan(user.id)
     if (!result.ok) return toastError(t('errors.generic'))
-    success(t('account.planActivated') || t('subscription.active'))
+    success(t('subscription.activationSuccess'))
   }
 
   function payOnline() {
@@ -318,14 +407,13 @@ export function TrainerSubscription() {
   return (
     <div className="space-y-5">
       <PageHeader eyebrow={t('nav.trainer')} title={t('subscription.title')} description={t('subscription.subtitle')} actions={subscription?.status === 'active' ? <Button variant="dangerSoft" onClick={() => setCancelOpen(true)}>{t('subscription.cancelPlan')}</Button> : null} />
-      {!active ? <Alert tone={subscription?.status === 'pending' ? 'warning' : 'danger'} title={t(`subscription.${subscription?.status || 'noSubscription'}`)}>{pending ? t('subscription.pendingReviewDesc') : t('subscription.expiredNotice')}</Alert> : null}
+      {!active ? <Alert tone="danger" title={t(`subscription.${subscription?.status || 'noSubscription'}`)}>{pending ? t('subscription.pendingReviewDesc') : t('subscription.expiredNotice')}</Alert> : null}
       <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
         <Card>
           <CardHeader title={t('subscription.currentPlan')} action={<StatusPill status={active ? 'active' : subscription?.status || 'pending'} t={t} />} />
           <div className="p-5">
-            <div className="flex items-center gap-4 rounded-xl bg-surface p-4"><span className="grid h-12 w-12 place-items-center rounded-xl bg-brand-soft text-brand"><ShieldCheck size={24} /></span><div className="min-w-0 flex-1"><p className="text-base font-bold text-ink">{currentPlan?.name || t('subscription.freeName')}</p><p className="text-xs text-muted">{currentPlan?.description || t('subscription.freeDesc')}</p></div><div className="text-end"><p className="text-lg font-bold text-ink">{money(currentPlan?.priceDA || 0)}</p><p className="text-[10px] text-muted">{t('subscription.perMonth')}</p></div></div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3"><InfoCell label={t('subscription.startDate')} value={subscription?.startedAt ? date(subscription.startedAt) : '—'} /><InfoCell label={active ? t('subscription.renewsOn') : t('subscription.endDate')} value={subscription?.endsAt ? date(subscription.endsAt) : '—'} /><InfoCell label={t('subscription.status')} value={remaining !== null ? t('subscription.daysRemaining', { count: remaining }) : t('subscription.freeForever')} /></div>
-            <div className="mt-4 space-y-3">{usageRows.map((row) => <div key={row.label}><div className="mb-1 flex items-center justify-between text-[11px]"><span className="text-muted">{row.label}</span><span className="font-medium text-ink">{row.used} / {row.limit === -1 ? '∞' : row.limit}</span></div><ProgressBar value={row.limit === -1 ? 0 : Math.min(100, Math.round((row.used / Math.max(row.limit, 1)) * 100))} tone={row.limit !== -1 && row.used >= row.limit ? 'danger' : 'brand'} size="sm" /></div>)}</div>
+            <div className="flex items-center gap-4 rounded-xl bg-surface p-4"><span className="grid h-12 w-12 place-items-center rounded-xl bg-brand-soft text-brand"><ShieldCheck size={24} /></span><div className="min-w-0 flex-1"><p className="text-base font-bold text-ink">{currentPlan?.name || t('subscription.planProName')}</p><p className="text-xs text-muted">{currentPlan?.description || t('subscription.planProDesc')}</p></div><div className="text-end"><p className="text-lg font-bold text-ink">{money(currentPlan?.priceDA || 0)}</p><p className="text-[10px] text-muted">{t('subscription.perMonth')}</p></div></div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3"><InfoCell label={t('subscription.startDate')} value={subscription?.startedAt ? date(subscription.startedAt) : '—'} /><InfoCell label={active ? t('subscription.renewsOn') : t('subscription.endDate')} value={subscription?.endsAt ? date(subscription.endsAt) : '—'} /><InfoCell label={t('subscription.status')} value={remaining !== null ? t('subscription.daysRemaining', { count: remaining }) : t('subscription.planProName')} /></div>
           </div>
         </Card>
 
@@ -338,7 +426,7 @@ export function TrainerSubscription() {
                 <div key={plan.id} className={cn('rounded-xl border p-4', current ? 'border-brand bg-brand-soft/40' : 'border-line')}>
                   <div className="flex items-start justify-between gap-2"><div><p className="text-sm font-bold text-ink">{plan.name}</p><p className="mt-0.5 text-[11px] text-muted">{plan.description}</p></div><div className="text-end"><p className="text-sm font-bold text-ink">{money(plan.priceDA)}</p><p className="text-[10px] text-muted">{t('subscription.perMonth')}</p></div></div>
                   <div className="mt-3 flex flex-wrap gap-1.5">{plan.features?.slice(0, 3).map((feature) => <Badge key={feature} tone="neutral">{feature}</Badge>)}</div>
-                  <div className="mt-3">{current ? <Badge tone="success" dot>{t('subscription.currentPlanBadge')}</Badge> : plan.priceDA === 0 ? <Button variant="soft" size="sm" fullWidth onClick={activateFree}>{t('subscription.activateFree')}</Button> : <Button size="sm" fullWidth onClick={() => setCheckout(plan)}>{t('subscription.choosePlan')}</Button>}</div>
+                  <div className="mt-3">{current ? <Badge tone="success" dot>{t('subscription.currentPlanBadge')}</Badge> : subscription?.status === 'pending' ? <Button size="sm" fullWidth disabled>{t('subscription.pendingActivation')}</Button> : <Button size="sm" fullWidth onClick={() => setCheckout(plan)}>{t('subscription.choosePlan')}</Button>}</div>
                 </div>
               )
             })}
@@ -350,18 +438,12 @@ export function TrainerSubscription() {
         <CardHeader title={t('subscription.history')} description={t('subscription.historyEmptyDesc')} />
         {history.length ? <Table><thead><tr><th>{t('subscription.invoice')}</th><th>{t('subscription.plan')}</th><th>{t('subscription.amount')}</th><th className="hidden sm:table-cell">{t('subscription.method')}</th><th className="hidden sm:table-cell">{t('subscription.date')}</th><th>{t('subscription.status')}</th></tr></thead><tbody>{history.map((payment) => <tr key={payment.id}><td className="text-xs font-medium text-ink">{payment.reference}</td><td className="text-xs text-muted">{getPlan(state, payment.planId)?.name}</td><td className="text-xs font-semibold text-ink">{money(payment.amount)}</td><td className="hidden sm:table-cell"><Badge tone={payment.method === 'manual' ? 'amber' : 'blue'}>{payment.method === 'manual' ? t('subscription.manualPayment') : t('subscription.onlinePayment')}</Badge></td><td className="hidden sm:table-cell text-[11px] text-muted">{date(payment.submittedAt)}</td><td><StatusPill status={payment.status} t={t} /></td></tr>)}</tbody></Table> : <EmptyState icon={Wallet} title={t('subscription.historyEmpty')} description={t('subscription.historyEmptyDesc')} compact />}
       </Card>
-
-      <Modal open={Boolean(checkout)} onClose={() => setCheckout(null)} title={t('subscription.paymentTitle')} description={checkout ? t('subscription.planLabel', { plan: checkout.name }) : ''} footer={<><Button variant="secondary" onClick={() => setCheckout(null)}>{t('common.cancel')}</Button><Button icon={CreditCard} onClick={() => { setProvider('cib'); payOnline() }}>{t('subscription.payNow')}</Button></>}>
-        {checkout ? <div className="space-y-4"><div className="rounded-xl bg-surface p-4"><div className="flex justify-between text-xs"><span className="text-muted">{t('subscription.plan')}</span><span className="font-semibold text-ink">{checkout.name}</span></div><div className="mt-2 flex justify-between text-xs"><span className="text-muted">{t('subscription.billingCycle')}</span><span className="text-ink">{t('subscription.monthly')}</span></div><div className="mt-3 flex justify-between border-t border-line pt-3"><span className="text-sm font-semibold text-ink">{t('subscription.totalDue')}</span><span className="text-lg font-bold text-brand">{money(checkout.priceDA)}</span></div></div><div><Label>{t('subscription.paymentMethod')}</Label><Select value={provider} onChange={(event) => setProvider(event.target.value)}><option value="cib">CIB Web</option><option value="edahabia">Edahabia</option></Select></div><Alert tone="info">{t('subscription.onlineSimulated')}</Alert><Button variant="soft" fullWidth icon={Landmark} onClick={() => setManualOpen(true)}>{t('subscription.payManual')}</Button></div> : null}
-      </Modal>
-
-      <Modal open={manualOpen} onClose={() => setManualOpen(false)} title={t('subscription.payManual')} footer={<><Button variant="secondary" onClick={() => setManualOpen(false)}>{t('common.cancel')}</Button><Button onClick={submitManual}>{t('subscription.submitManual')}</Button></>}>
-        <div className="space-y-4"><Alert tone="warning">{t('subscription.manualInstructions')}</Alert><div><Label required>{t('subscription.reference')}</Label><Input value={reference} onChange={(event) => setReference(event.target.value)} placeholder="CCP-2026-0000" /></div><div><Label required>{t('subscription.uploadReceipt')}</Label><label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-line px-3 py-5 text-xs text-muted hover:border-brand hover:text-brand"><FileText size={16} />{proofName || t('subscription.receiptHint')}<input type="file" accept="image/*,application/pdf" className="hidden" onChange={pickProof} /></label></div></div>
-      </Modal>
-
-      <ConfirmDialog open={cancelOpen} onClose={() => setCancelOpen(false)} onConfirm={cancel} title={t('subscription.cancelConfirm')} description={t('subscription.cancelPlanDesc')} confirmLabel={t('subscription.cancelPlan')} />
     </div>
   )
+}
+
+function InfoCell({ label, value }) {
+  return <div className="rounded-lg bg-surface p-2.5"><p className="text-[9px] uppercase tracking-wide text-muted">{label}</p><p className="mt-0.5 truncate text-[11px] font-semibold text-ink">{value}</p></div>
 }
 
 export function TrainerProfile() {
@@ -415,8 +497,4 @@ export function TrainerProfile() {
       </div>
     </div>
   )
-}
-
-function InfoCell({ label, value }) {
-  return <div className="rounded-lg bg-surface p-2.5"><p className="text-[9px] uppercase tracking-wide text-muted">{label}</p><p className="mt-0.5 truncate text-[11px] font-semibold text-ink">{value}</p></div>
 }

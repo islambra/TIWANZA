@@ -138,7 +138,7 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <p className="text-[10px] text-muted">{t('admin.statFreeSchools')}</p>
-                <p className="text-sm font-bold text-ink">{state.subscriptions.filter((item) => item.planId === 'plan-free' && item.status === 'active').length}</p>
+                <p className="text-sm font-bold text-ink">{state.subscriptions.filter((item) => item.status === 'active' && item.planId === 'plan-pro').length}</p>
               </div>
             </div>
           </div>

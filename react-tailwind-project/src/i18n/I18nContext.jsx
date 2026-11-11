@@ -12,7 +12,9 @@ function resolve(dictionary, key) {
 export function I18nProvider({ children }) {
   const [language, setLanguageState] = useState(() => {
     if (typeof window === 'undefined') return 'fr'
-    return window.localStorage.getItem(STORAGE_KEY) === 'ar' ? 'ar' : 'fr'
+    const stored = window.localStorage.getItem(STORAGE_KEY)
+    if (stored === 'ar' || stored === 'en') return stored
+    return 'fr'
   })
 
   useEffect(() => {
@@ -37,8 +39,15 @@ export function I18nProvider({ children }) {
       language,
       dir: language === 'ar' ? 'rtl' : 'ltr',
       isRtl: language === 'ar',
-      setLanguage: (next) => setLanguageState(next === 'ar' ? 'ar' : 'fr'),
-      toggleLanguage: () => setLanguageState((current) => (current === 'fr' ? 'ar' : 'fr')),
+setLanguage: (next) => {
+    const normalized = next === 'ar' ? 'ar' : next === 'en' ? 'en' : 'fr'
+    setLanguageState(normalized)
+  },
+  toggleLanguage: () => setLanguageState((current) => {
+    if (current === 'ar') return 'en'
+    if (current === 'en') return 'fr'
+    return 'ar'
+  }),
       t,
       money: (amount) => formatDA(amount, language),
       number: (value) => formatNumber(value, language),

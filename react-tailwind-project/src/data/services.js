@@ -64,7 +64,7 @@ function upsertProgress(draft, learnerId, courseId, lessonId, patch) {
   return entry
 }
 
-function activateSubscription(draft, userId, planId, method, amount) {
+export function activateSubscription(draft, userId, planId, method, amount) {
   const profile = findProfile(draft, userId)
   if (!profile) return null
   const now = new Date()
@@ -99,7 +99,7 @@ function activateSubscription(draft, userId, planId, method, amount) {
   return subscription
 }
 
-function setSubscriptionStatus(draft, userId, status, planId) {
+export function setSubscriptionStatus(draft, userId, status, planId) {
   const profile = findProfile(draft, userId)
   if (!profile) return null
   let subscription = profile.subscriptionId
@@ -371,16 +371,16 @@ export function savePlanSelection(userId, planId) {
 }
 
 export function activateFreePlan(userId) {
-  const plan = getState().plans.find((item) => item.code === 'free')
+  const plan = getState().plans.find((item) => item.code === 'pro')
   if (!plan) return { ok: false, error: 'not-found' }
   updateState((draft) => {
-    activateSubscription(draft, userId, plan.id, 'free', 0)
+    activateSubscription(draft, userId, plan.id, 'online', plan.priceDA)
     draft.onboardingDrafts[userId] = {
       ...(draft.onboardingDrafts[userId] || {}),
       selectedPlanId: plan.id,
       subscriptionStatus: 'active',
     }
-    pushActivity(draft, { type: 'subscription_free', actorId: userId, schoolId: findProfile(draft, userId)?.schoolId })
+    pushActivity(draft, { type: 'subscription_paid', actorId: userId, schoolId: findProfile(draft, userId)?.schoolId })
   })
   return { ok: true, plan }
 }

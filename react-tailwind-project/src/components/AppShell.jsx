@@ -10,6 +10,7 @@ import {
   ClipboardList,
   CreditCard,
   FileQuestion,
+  Globe2,
   GraduationCap,
   Home,
   Languages,
@@ -342,7 +343,7 @@ export default function AppShell() {
             <div className="flex items-center gap-1.5">
               <Button variant="ghost" size="sm" onClick={toggleLanguage} className="hidden px-2.5 sm:inline-flex" title={t('common.language')}>
                 <Languages size={15} />
-                <span className="text-xs font-bold uppercase">{language === 'fr' ? 'AR' : 'FR'}</span>
+                <span className="text-xs font-bold uppercase">{language === 'fr' ? 'FR' : language === 'ar' ? 'AR' : 'EN'}</span>
               </Button>
 
               <div className="relative">
@@ -412,7 +413,7 @@ export default function AppShell() {
                           <UserRound size={14} /> {t('common.profile')}
                         </button>
                         <button type="button" onClick={toggleLanguage} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-ink hover:bg-surface sm:hidden">
-                          <Languages size={14} /> {language === 'fr' ? 'العربية' : 'Français'}
+                          <Languages size={14} /> {language === 'fr' ? 'Français' : language === 'ar' ? 'العربية' : 'English'}
                         </button>
                         <div className="my-1 border-t border-line" />
                         <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted">{t('common.demoAccount')}</p>

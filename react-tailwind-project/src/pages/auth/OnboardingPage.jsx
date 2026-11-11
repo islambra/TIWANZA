@@ -68,7 +68,7 @@ export default function OnboardingPage() {
   const [checking, setChecking] = useState(false)
   const [error, setError] = useState('')
   const [savingSchool, setSavingSchool] = useState(false)
-  const [selectedPlan, setSelectedPlan] = useState(subscription?.planId || draft.selectedPlanId || 'plan-free')
+  const [selectedPlan, setSelectedPlan] = useState(subscription?.planId || draft.selectedPlanId || 'plan-pro')
   const [payOpen, setPayOpen] = useState(false)
   const [payMethod, setPayMethod] = useState('online')
   const [cardNumber, setCardNumber] = useState('4242 4242 4242 4242')
@@ -161,13 +161,12 @@ export default function OnboardingPage() {
     setError('')
     setPlanLoading(true)
     window.setTimeout(() => {
-      const result = activateFreePlan(user.id)
+      const result = submitSubscriptionManual({ userId: user.id, planId: 'plan-pro', reference: '', proofName: '' })
       setPlanLoading(false)
       if (!result.ok) {
         toastError(t('errors.generic'))
         return
       }
-      selectedPlan && setSelectedPlan('plan-free')
       success(t('onboarding.planActivated'))
       setStep(4)
     }, 450)
@@ -175,10 +174,6 @@ export default function OnboardingPage() {
 
   function handleProceedPlan() {
     if (!selectedPlanData) return
-    if (selectedPlanData.code === 'free') {
-      handleFreePlan()
-      return
-    }
     setPayOpen(true)
     setAccepted(false)
   }
@@ -406,6 +401,7 @@ export default function OnboardingPage() {
                       <Select id="school-language" value={schoolLanguage} onChange={(e) => setSchoolLanguage(e.target.value)}>
                         <option value="fr">{t('common.french')}</option>
                         <option value="ar">{t('common.arabic')}</option>
+                        <option value="en">English</option>
                       </Select>
                     </div>
                   </div>
@@ -471,7 +467,7 @@ export default function OnboardingPage() {
               ) : null}
               <div className="mx-auto mt-6 grid max-w-3xl gap-4 md:grid-cols-2">
                 {plans.map((plan) => {
-                  const isPro = plan.code === 'pro'
+                  const isPro = plan.code === 'pro' || plan.id === 'plan-pro'
                   const active = selectedPlan === plan.id
                   const features = language === 'ar' ? plan.featuresAr : plan.featuresFr
                   return (
@@ -508,14 +504,10 @@ export default function OnboardingPage() {
                   <Button variant="ghost" onClick={finishLater}>{t('onboarding.chooseLater')}</Button>
                 </div>
                 <Button onClick={handleProceedPlan} loading={planLoading} icon={selectedPlanData?.code === 'pro' ? CreditCard : Rocket} size="lg">
-                  {selectedPlanData?.code === 'free' ? t('onboarding.activateFree') : t('onboarding.continueWithPro')}
+                  {t('onboarding.continueWithPro')}
                 </Button>
               </div>
-              {selectedPlanData?.code === 'free' ? (
-                <p className="mx-auto mt-3 max-w-3xl text-center text-[11px] text-muted">{t('onboarding.freePlanNotice')}</p>
-              ) : (
-                <p className="mx-auto mt-3 max-w-3xl text-center text-[11px] text-muted">{t('onboarding.proPlanNotice')}</p>
-              )}
+<p className="mx-auto mt-3 max-w-3xl text-center text-[11px] text-muted">{t('onboarding.proPlanNotice')}</p>
             </div>
           ) : null}
 
@@ -543,7 +535,7 @@ export default function OnboardingPage() {
                     <div className="rounded-xl border border-line p-3">
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">{t('onboarding.readyPlan')}</p>
                       <p className="mt-1 text-sm font-semibold text-ink">{selectedPlanData ? (language === 'ar' ? selectedPlanData.nameAr : selectedPlanData.nameFr) : '—'}</p>
-                      <p className="text-[10px] text-muted">{pendingManual ? t('common.pending') : isActive ? t('common.active') : t('common.free')}</p>
+                      <p className="text-[10px] text-muted">{pendingManual ? t('common.pending') : isActive ? t('common.active') : t('common.active')}</p>
                     </div>
                     <div className="rounded-xl border border-line p-3">
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">{t('onboarding.readySite')}</p>
