@@ -253,7 +253,7 @@ export default function AuthPage({ mode = 'login', schoolScoped = false }) {
   }
 
   return (
-    <div className="grid min-h-screen bg-white lg:grid-cols-[1.02fr_1fr]">
+    <div className="grid min-h-screen min-w-0 grid-cols-[minmax(0,1fr)] bg-white lg:grid-cols-[minmax(0,1.02fr)_minmax(0,1fr)]">
       <div
         className="relative hidden overflow-hidden bg-ink p-10 text-white lg:flex lg:flex-col lg:justify-between"
         style={{
@@ -307,29 +307,30 @@ export default function AuthPage({ mode = 'login', schoolScoped = false }) {
         </div>
       </div>
 
-      <div className="flex flex-col">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-4 sm:gap-3 sm:px-5 lg:border-0">
-          <Link to={schoolScoped ? `/s/${school.slug}` : '/'} className="inline-flex shrink-0 items-center gap-2 text-sm font-medium text-muted transition hover:text-ink">
-            <ArrowLeft size={16} className="rtl:rotate-180" /> {t('common.back')}
+      <div className="flex min-w-0 flex-col">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3 sm:gap-3 sm:px-5 lg:border-0">
+          <Link to={schoolScoped ? `/s/${school.slug}` : '/'} className="inline-flex min-h-11 shrink-0 items-center gap-2 text-sm font-medium text-muted transition hover:text-ink md:min-h-0">
+            <ArrowLeft size={16} className="rtl:rotate-180" />
+            <span className="hidden min-[360px]:inline">{t('common.back')}</span>
           </Link>
-          <Link to={schoolScoped ? `/s/${school.slug}` : '/'} className="flex shrink-0 items-center gap-2 lg:hidden">
+          <Link to={schoolScoped ? `/s/${school.slug}` : '/'} className="inline-flex h-11 w-11 min-h-11 min-w-11 items-center justify-center gap-2 lg:hidden">
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-white" style={{ background: school?.brandAccent || '#0D7A6A' }}>
               {schoolScoped && school.logo ? <img src={school.logo} alt="" className="h-full w-full rounded-xl object-cover" /> : <GraduationCap size={15} />}
             </span>
-            <span className="hidden max-w-[140px] truncate text-xs font-bold text-ink sm:block">{schoolScoped ? school.name : 'Tiwanza'}</span>
+            <span className="hidden max-w-[110px] truncate text-xs font-bold text-ink sm:block">{schoolScoped ? school.name : 'Tiwanza'}</span>
           </Link>
           <button
             type="button"
             onClick={() => navigate(authModePath(isLogin ? 'register' : 'login'))}
-            className="shrink-0 rounded-lg bg-surface px-3 py-1.5 text-[11px] font-semibold text-brand transition hover:bg-brand-soft"
+            className="inline-flex min-h-11 shrink-0 items-center rounded-lg bg-surface px-3 py-2 text-[11px] font-semibold text-brand transition hover:bg-brand-soft md:min-h-0 md:py-1.5"
           >
             {isLogin ? t('auth.signupLink') : t('auth.loginLink')}
           </button>
         </div>
 
-        <div className="flex flex-1 items-center justify-center px-4 py-8 sm:px-8">
-          <div className="w-full max-w-md animate-fade-in">
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand">{schoolScoped ? t('auth.roleLearner') : t('auth.roleTrainer')}</p>
+        <div className="flex min-w-0 flex-1 items-start justify-center px-4 py-6 sm:items-center sm:px-8 sm:py-8">
+          <div className="w-full min-w-0 max-w-md animate-fade-in">
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-brand">{schoolScoped ? t('auth.roleLearner') : t('auth.roleTrainer')}</p>
             <h1 className="brand-font mt-2 break-words text-2xl font-bold tracking-tight text-ink sm:text-3xl">{title}</h1>
             <p className="mt-1.5 text-sm leading-relaxed text-muted">{subtitle}</p>
 
@@ -337,15 +338,15 @@ export default function AuthPage({ mode = 'login', schoolScoped = false }) {
               <div className="mt-5 flex items-center gap-3 rounded-2xl border border-brand/15 bg-brand-soft/40 p-3.5">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-white" style={{ background: school.brandAccent || '#0D7A6A' }}><School size={18} /></span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-bold text-ink">{school.name}</p>
-                  <p className="truncate text-[10px] text-muted" dir="ltr">{school.subdomain}</p>
+                  <p className="break-words text-xs font-bold text-ink">{school.name}</p>
+                  <p className="break-all text-[11px] text-muted" dir="ltr">{school.subdomain}</p>
                 </div>
                 <Badge tone="brand">{t('auth.roleLearner')}</Badge>
               </div>
             ) : (
               <div className="mt-5 flex items-center gap-3 rounded-2xl border border-line bg-surface/60 p-3.5">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand text-white"><ShieldCheck size={18} /></span>
-                <div className="min-w-0"><p className="text-xs font-bold text-ink">{t('auth.secureAccess')}</p><p className="text-[10px] leading-relaxed text-muted">{t('auth.roleContextTrainer')}</p></div>
+                  <div className="min-w-0 flex-1"><p className="break-words text-xs font-bold text-ink">{t('auth.secureAccess')}</p><p className="text-[11px] leading-relaxed text-muted">{t('auth.roleContextTrainer')}</p></div>
               </div>
             )}
 
@@ -366,7 +367,7 @@ export default function AuthPage({ mode = 'login', schoolScoped = false }) {
                     <Label htmlFor="password" required>{t('auth.password')}</Label>
                     <div className="relative">
                       <Input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" icon={Lock} autoComplete="new-password" className="pe-10" />
-                      <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute end-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink">
+                      <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute end-2 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center text-muted hover:text-ink md:end-3 md:h-8 md:w-8">
                         {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                       </button>
                     </div>
@@ -378,15 +379,15 @@ export default function AuthPage({ mode = 'login', schoolScoped = false }) {
                 </div>
                 <div className="rounded-xl border border-line bg-surface/60 p-3">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-muted">{t('auth.passwordStrength')}</span>
-                    <span className={cn('text-[10px] font-bold', passwordStrength.score >= 3 ? 'text-success' : passwordStrength.score === 2 ? 'text-warning' : 'text-danger')}>{t(passwordStrength.key)}</span>
+                    <span className="text-[11px] font-bold uppercase tracking-wide text-muted">{t('auth.passwordStrength')}</span>
+                    <span className={cn('text-[11px] font-bold', passwordStrength.score >= 3 ? 'text-success' : passwordStrength.score === 2 ? 'text-warning' : 'text-danger')}>{t(passwordStrength.key)}</span>
                   </div>
                   <div className="mt-2 flex gap-1.5">
                     {[1, 2, 3, 4].map((step) => <span key={step} className={cn('h-1.5 flex-1 rounded-full transition-colors', step <= passwordStrength.score ? (passwordStrength.score >= 3 ? 'bg-success' : passwordStrength.score === 2 ? 'bg-warning' : 'bg-danger') : 'bg-line')} />)}
                   </div>
                 </div>
                 <label className="flex cursor-pointer items-start gap-2.5 rounded-lg bg-surface/70 p-2.5">
-                  <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-line text-brand accent-[#0D7A6A]" />
+                  <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 rounded border-line text-brand accent-[#0D7A6A]" />
                   <span className="text-[11px] leading-relaxed text-muted">
                     {t('auth.terms')}
                   </span>
@@ -410,11 +411,11 @@ export default function AuthPage({ mode = 'login', schoolScoped = false }) {
                   <div>
                     <div className="flex items-center justify-between">
                       <Label htmlFor="login-password" required>{t('auth.password')}</Label>
-                      <button type="button" onClick={() => setForgotOpen(true)} className="mb-1.5 text-[11px] font-medium text-brand hover:underline">{t('auth.forgotPassword')}</button>
+                      <button type="button" onClick={() => setForgotOpen(true)} className="inline-flex min-h-11 items-center px-1 text-[11px] font-medium text-brand hover:underline md:min-h-0">{t('auth.forgotPassword')}</button>
                     </div>
                     <div className="relative">
                       <Input id="login-password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('auth.passwordPlaceholder')} icon={Lock} autoComplete="current-password" className="pe-10" />
-                      <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute end-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink">
+                      <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute end-2 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center text-muted hover:text-ink md:end-3 md:h-8 md:w-8">
                         {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                       </button>
                     </div>
@@ -427,12 +428,12 @@ export default function AuthPage({ mode = 'login', schoolScoped = false }) {
 
                 <Divider label={t('auth.or')} className="my-6" />
 
-                <details className="group rounded-2xl border border-line bg-surface/40 [&::-webkit-details-marker]:hidden" open={schoolScoped}>
-                  <summary className="flex cursor-pointer list-none items-center gap-3 p-3.5">
+                <details className="group min-w-0 rounded-2xl border border-line bg-surface/40 [&::-webkit-details-marker]:hidden" open={schoolScoped}>
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 p-3.5">
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-line bg-white text-muted"><KeyRound size={16} /></span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-xs font-bold text-ink">{t('auth.demoHint')}</span>
-                      <span className="block truncate text-[10px] text-muted">{t('auth.demoNotice')}</span>
+                      <span className="line-clamp-2 text-[11px] leading-relaxed text-muted">{t('auth.demoNotice')}</span>
                     </span>
                     <Badge tone="brand">{t('app.demoBadge')}</Badge>
                     <ChevronDown size={15} className="shrink-0 text-muted transition-transform group-open:rotate-180" />
@@ -444,20 +445,20 @@ export default function AuthPage({ mode = 'login', schoolScoped = false }) {
                         type="button"
                         onClick={() => handleDemo(account)}
                         disabled={Boolean(demoLoading)}
-                        className="flex w-full items-center gap-3 rounded-xl border border-line bg-white p-2.5 text-start transition hover:border-brand/30 hover:bg-surface disabled:opacity-70"
+                         className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-line bg-white p-2.5 text-start transition hover:border-brand/30 hover:bg-surface disabled:opacity-70"
                       >
                         <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-lg border', account.tone)}>
                           <account.icon size={16} />
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="block text-xs font-semibold text-ink">{t(`auth.demo${account.role.charAt(0).toUpperCase()}${account.role.slice(1)}`)}</span>
-                          <span className="block truncate text-[10px] text-muted">{account.name} · {account.email}</span>
-                          {account.courses !== undefined ? <span className="mt-0.5 block text-[10px] font-semibold text-brand">{t('auth.demoLearnerCourses', { count: account.courses, progress: account.progress })}</span> : null}
+                          <span className="block break-all text-[11px] leading-relaxed text-muted">{account.name} · {account.email}</span>
+                          {account.courses !== undefined ? <span className="mt-0.5 block text-[11px] font-semibold text-brand">{t('auth.demoLearnerCourses', { count: account.courses, progress: account.progress })}</span> : null}
                         </span>
                         {demoLoading === account.id ? <Loader2 size={15} className="animate-spin text-brand" /> : <ArrowRight size={15} className="text-muted rtl:rotate-180" />}
                       </button>
                     ))}
-                    <p className="inline-flex max-w-full flex-wrap items-center gap-1.5 px-1 pt-1 text-[10px] text-muted">
+                      <p className="inline-flex max-w-full flex-wrap items-center gap-1.5 px-1 pt-1 text-[11px] leading-relaxed text-muted">
                       <KeyRound size={11} /> {t('auth.demoPasswordHint', { password: 'demo1234' })}
                     </p>
                     {!schoolScoped ? (
@@ -472,7 +473,7 @@ export default function AuthPage({ mode = 'login', schoolScoped = false }) {
           </div>
         </div>
 
-        <div className="border-t border-line px-5 py-4 text-center text-[10px] leading-relaxed text-muted lg:border-0">
+        <div className="border-t border-line px-4 py-4 text-center text-[11px] leading-relaxed text-muted sm:px-5 lg:border-0">
           <ShieldCheck size={12} className="mx-auto mb-1.5 text-brand" />
           {t('auth.demoNotice')}
         </div>
