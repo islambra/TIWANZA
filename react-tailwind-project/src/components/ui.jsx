@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { AlertCircle, Check, ChevronDown, Loader2, Search, X } from 'lucide-react'
+import { AlertCircle, Check, ChevronDown, Loader2, RotateCcw, Search, X } from 'lucide-react'
+import { useI18n } from '../i18n/I18nContext.jsx'
 import { cn, initials } from '../lib/utils.js'
 
 const buttonVariants = {
@@ -33,12 +34,16 @@ export function Button({
   className,
   disabled,
   type = 'button',
+  as: Component = 'button',
   ...props
 }) {
+  const isButton = Component === 'button'
+  const isDisabled = Boolean(disabled || loading)
   return (
-    <button
-      type={type}
-      disabled={disabled || loading}
+    <Component
+      {...(isButton
+        ? { type, disabled: isDisabled }
+        : { 'aria-disabled': isDisabled || undefined })}
       className={cn(
         'inline-flex items-center justify-center font-semibold transition focus-visible:outline-none focus-visible:ring-4 disabled:cursor-not-allowed',
         buttonVariants[variant] || buttonVariants.primary,
@@ -51,7 +56,7 @@ export function Button({
       {loading ? <Loader2 size={16} className="animate-spin" /> : Icon ? <Icon size={16} /> : null}
       {children}
       {IconRight ? <IconRight size={16} /> : null}
-    </button>
+    </Component>
   )
 }
 
@@ -319,6 +324,11 @@ export function Switch({ checked, onChange, label, description, disabled, classN
 }
 
 export function Modal({ open, onClose, title, description, children, footer, size = 'md', className }) {
+  const { t } = useI18n()
+  const titleId = useId()
+  const descriptionId = useId()
+  const dialogRef = useRef(null)
+
   useEffect(() => {
     if (!open) return undefined
     const onKeyDown = (event) => {
@@ -333,6 +343,15 @@ export function Modal({ open, onClose, title, description, children, footer, siz
     }
   }, [open, onClose])
 
+  useEffect(() => {
+    if (!open) return undefined
+    const previousFocus = document.activeElement
+    dialogRef.current?.focus()
+    return () => {
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus()
+    }
+  }, [open])
+
   if (!open) return null
 
   const sizes = {
@@ -344,22 +363,26 @@ export function Modal({ open, onClose, title, description, children, footer, siz
 
   return createPortal(
     <div className="fixed inset-0 z-[80] flex items-end justify-center p-0 sm:items-center sm:p-4">
-      <button type="button" aria-label="Fermer" className="absolute inset-0 bg-ink/35 backdrop-blur-[2px]" onClick={onClose} />
+      <div aria-hidden="true" role="presentation" className="absolute inset-0 bg-ink/35 backdrop-blur-[2px]" onClick={onClose} />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
+        aria-describedby={description ? descriptionId : undefined}
+        tabIndex={-1}
         className={cn(
-          'relative z-10 max-h-[92vh] w-full animate-slide-up overflow-hidden rounded-t-2xl border border-line bg-white shadow-2xl sm:rounded-2xl',
+          'relative z-10 max-h-[92vh] w-full animate-slide-up overflow-hidden rounded-t-2xl border border-line bg-white shadow-2xl outline-none sm:rounded-2xl',
           sizes[size] || sizes.md,
           className,
         )}
       >
         <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
           <div className="min-w-0">
-            <h2 className="text-base font-semibold text-ink">{title}</h2>
-            {description ? <p className="mt-0.5 text-xs leading-relaxed text-muted">{description}</p> : null}
+            <h2 id={titleId} className="text-base font-semibold text-ink">{title}</h2>
+            {description ? <p id={descriptionId} className="mt-0.5 text-xs leading-relaxed text-muted">{description}</p> : null}
           </div>
-          <IconButton label="Fermer" onClick={onClose} size="sm">
+          <IconButton label={t('common.close')} onClick={onClose} size="sm">
             <X size={16} />
           </IconButton>
         </div>
@@ -378,10 +401,11 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
-  cancelLabel = 'Annuler',
+  cancelLabel,
   tone = 'danger',
   loading,
 }) {
+  const { t } = useI18n()
   return (
     <Modal
       open={open}
@@ -391,7 +415,7 @@ export function ConfirmDialog({
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={loading}>
-            {cancelLabel}
+            {cancelLabel ?? t('common.cancel')}
           </Button>
           <Button variant={tone} onClick={onConfirm} loading={loading}>
             {confirmLabel}
@@ -406,13 +430,15 @@ export function ConfirmDialog({
 
 export function Tabs({ items, value, onChange, className, variant = 'underline' }) {
   return (
-    <div className={cn('no-scrollbar flex overflow-x-auto', variant === 'underline' ? 'gap-1 border-b border-line' : 'gap-1 rounded-xl bg-surface p-1', className)}>
+    <div role="tablist" className={cn('no-scrollbar flex overflow-x-auto', variant === 'underline' ? 'gap-1 border-b border-line' : 'gap-1 rounded-xl bg-surface p-1', className)}>
       {items.map((item) => {
         const active = item.value === value
         return (
           <button
             key={item.value}
             type="button"
+            role="tab"
+            aria-selected={active}
             onClick={() => onChange(item.value)}
             className={cn(
               'inline-flex shrink-0 items-center gap-2 whitespace-nowrap px-3 py-2 text-sm font-semibold transition',
@@ -469,7 +495,7 @@ export function Alert({ title, children, tone = 'info', icon: Icon, className, a
     success: 'border-success/20 bg-success-soft text-success',
   }
   return (
-    <div className={cn('flex items-start gap-3 rounded-xl border p-3.5 text-sm', tones[tone] || tones.info, className)}>
+    <div role={tone === 'danger' ? 'alert' : 'status'} className={cn('flex items-start gap-3 rounded-xl border p-3.5 text-sm', tones[tone] || tones.info, className)}>
       <span className="mt-0.5 shrink-0">{Icon ? <Icon size={17} /> : <AlertCircle size={17} />}</span>
       <div className="min-w-0 flex-1">
         {title ? <p className="font-semibold">{title}</p> : null}
@@ -480,15 +506,19 @@ export function Alert({ title, children, tone = 'info', icon: Icon, className, a
   )
 }
 
-export function SearchField({ value, onChange, placeholder = 'Rechercher...', className }) {
+export function SearchField({ value, onChange, placeholder, className, 'aria-label': ariaLabel, ...props }) {
+  const { t } = useI18n()
+  const resolvedPlaceholder = placeholder ?? t('common.searchPlaceholder')
   return (
     <div className={cn('relative', className)}>
       <Search size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-muted" />
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
+        aria-label={ariaLabel || resolvedPlaceholder}
         className={cn(fieldBase, 'ps-9')}
+        {...props}
       />
     </div>
   )
@@ -503,17 +533,32 @@ export function ActionMenu({ items, align = 'end', label = 'Actions' }) {
     const onClick = (event) => {
       if (ref.current && !ref.current.contains(event.target)) setOpen(false)
     }
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
     document.addEventListener('mousedown', onClick)
-    return () => document.removeEventListener('mousedown', onClick)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onClick)
+      document.removeEventListener('keydown', onKeyDown)
+    }
   }, [open])
 
   return (
     <div className="relative" ref={ref}>
-      <IconButton label={label} onClick={() => setOpen((current) => !current)} size="sm" variant="outline">
+      <IconButton
+        label={label}
+        onClick={() => setOpen((current) => !current)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        size="sm"
+        variant="outline"
+      >
         <ChevronDown size={15} />
       </IconButton>
       {open ? (
         <div
+          role="menu"
           className={cn(
             'absolute top-full z-30 mt-1 w-48 animate-fade-in overflow-hidden rounded-xl border border-line bg-white py-1 shadow-xl',
             align === 'end' ? 'end-0' : 'start-0',
@@ -521,11 +566,12 @@ export function ActionMenu({ items, align = 'end', label = 'Actions' }) {
         >
           {items.map((item, index) =>
             item.separator ? (
-              <div key={`sep-${index}`} className="my-1 border-t border-line" />
+              <div key={`sep-${index}`} role="separator" className="my-1 border-t border-line" />
             ) : (
               <button
                 key={item.label}
                 type="button"
+                role="menuitem"
                 disabled={item.disabled}
                 onClick={() => {
                   setOpen(false)
@@ -549,12 +595,14 @@ export function ActionMenu({ items, align = 'end', label = 'Actions' }) {
 
 export function RatingStars({ value = 0, size = 14, className }) {
   return (
-    <span className={cn('inline-flex items-center gap-0.5 text-amber-500', className)} aria-label={`${value} / 5`}>
-      {[1, 2, 3, 4, 5].map((star) => (
-        <span key={star} className={star <= Math.round(value) ? 'text-amber-500' : 'text-line'}>
-          ★
-        </span>
-      ))}
+    <span role="img" className={cn('inline-flex items-center gap-0.5 text-amber-500', className)} aria-label={`${value} / 5`}>
+      <span aria-hidden="true" className="inline-flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <span key={star} className={star <= Math.round(value) ? 'text-amber-500' : 'text-line'}>
+            ★
+          </span>
+        ))}
+      </span>
     </span>
   )
 }
@@ -574,4 +622,27 @@ export function Divider({ label, className }) {
 
 export function Skeleton({ className }) {
   return <div className={cn('skeleton rounded-lg', className)} />
+}
+
+export function LoadingState({ label, className }) {
+  const { t } = useI18n()
+  return (
+    <div role="status" className={cn('flex items-center justify-center gap-2 py-10 text-xs text-muted', className)}>
+      <Loader2 size={16} className="animate-spin" />
+      {label || t('common.loading')}
+    </div>
+  )
+}
+
+export function ErrorState({ title, description, action, onRetry, className }) {
+  const { t } = useI18n()
+  return (
+    <EmptyState
+      icon={AlertCircle}
+      title={title || t('common.error')}
+      description={description || t('errors.generic')}
+      action={action || (onRetry ? <Button variant="secondary" size="sm" icon={RotateCcw} onClick={onRetry}>{t('common.retry')}</Button> : null)}
+      className={className}
+    />
+  )
 }

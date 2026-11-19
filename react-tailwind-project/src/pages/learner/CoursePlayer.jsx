@@ -52,7 +52,8 @@ import { LessonBlock } from '../../components/LessonContent.jsx'
 import { cn } from '../../lib/utils.js'
 
 export default function CoursePlayer() {
-  const { courseId, lessonId } = useParams()
+  const { courseId, lessonId, slug } = useParams()
+  const learnBase = slug ? `/s/${slug}/learn` : '/learn'
   const { user } = useAuth()
   const state = useTiwanzaStore()
   const { t, language, number, date } = useI18n()
@@ -94,11 +95,12 @@ export default function CoursePlayer() {
     return () => clearTimeout(timer)
   }, [quizOpen, result, secondsLeft])
 
-  if (!course) return <EmptyState icon={BookOpen} title={t('learner.courseNotFound')} action={<Button onClick={() => navigate('/learn/courses')}>{t('learner.backToMyCourses')}</Button>} />
-  if (!enrollment || enrollment.status !== 'active') return <EmptyState icon={Lock} title={t('learner.accessDenied')} description={t('checkout.alreadyEnrolled')} action={<Link to="/learn/courses"><Button>{t('learner.backToMyCourses')}</Button></Link>} />
+  if (!course) return <EmptyState icon={BookOpen} title={t('learner.courseNotFound')} action={<Button onClick={() => navigate(`${learnBase}/courses`)}>{t('learner.backToMyCourses')}</Button>} />
+  if (user?.schoolId && course.schoolId !== user.schoolId) return <EmptyState icon={Lock} title={t('learner.accessDenied')} action={<Link to={`${learnBase}/courses`}><Button>{t('learner.backToMyCourses')}</Button></Link>} />
+  if (!enrollment || enrollment.status !== 'active') return <EmptyState icon={Lock} title={t('learner.accessDenied')} description={t('checkout.alreadyEnrolled')} action={<Link to={`${learnBase}/courses`}><Button>{t('learner.backToMyCourses')}</Button></Link>} />
 
   function openLesson(lesson) {
-    navigate(`/learn/courses/${course.id}/lessons/${lesson.id}`)
+    navigate(`${learnBase}/courses/${course.id}/lessons/${lesson.id}`)
   }
 
   function markComplete() {
@@ -164,9 +166,9 @@ export default function CoursePlayer() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={() => navigate('/learn/courses')}>{t('learner.backToMyCourses')}</Button>
+          <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={() => navigate(`${learnBase}/courses`)}>{t('learner.backToMyCourses')}</Button>
           <span className="hidden text-xs text-muted sm:inline">/</span>
-          <Link to={`/learn/courses/${course.id}`} className="hidden max-w-[240px] truncate text-xs font-semibold text-ink sm:inline">{course.title}</Link>
+          <Link to={`${learnBase}/courses/${course.id}`} className="hidden max-w-[240px] truncate text-xs font-semibold text-ink sm:inline">{course.title}</Link>
         </div>
         <div className="flex items-center gap-3"><span className="text-[11px] text-muted">{t('learner.lessonsCompleted', { completed: progress.completed, total: progress.total })}</span><div className="w-28"><ProgressBar value={progress.percentage} size="sm" /></div><Badge tone="brand">{progress.percentage}%</Badge></div>
       </div>

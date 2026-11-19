@@ -7,7 +7,7 @@
   --color-surface: #f8f8f6;
   --color-line: #e4e4e0;
   --color-ink: #111111;
-  --color-muted: #5c5c5c;
+  --color-muted: #525252;
   --color-danger: #b42318;
   --color-danger-soft: #fef3f2;
   --color-warning: #9a6700;
@@ -18,17 +18,31 @@
   --font-display: "Baloo 2", "Sora", ui-sans-serif, sans-serif;
   --font-arabic: "IBM Plex Sans Arabic", "Sora", ui-sans-serif, sans-serif;
   --font-arabic-display: "Baloo Bhaijaan 2", "IBM Plex Sans Arabic", sans-serif;
-  --radius-card: 8px;
+  --radius-card: 12px;
+  --shadow-card: 0 1px 2px rgba(17, 17, 17, 0.04), 0 6px 16px rgba(17, 17, 17, 0.04);
+  --shadow-raised: 0 2px 4px rgba(17, 17, 17, 0.05), 0 12px 28px rgba(17, 17, 17, 0.08);
+  --shadow-popover: 0 4px 10px rgba(17, 17, 17, 0.06), 0 18px 40px rgba(17, 17, 17, 0.12);
+  --text-caption: 0.6875rem;
+  --text-eyebrow: 0.6875rem;
+  --duration-fast: 150ms;
+  --duration-base: 220ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 :root {
-  --brand: #0d7a6a;
-  --brand-dark: #0a5f53;
-  --brand-soft: #e7f2f0;
-  --surface: #f8f8f6;
-  --line: #e4e4e0;
-  --ink: #111111;
-  --muted: #5c5c5c;
+  --brand: var(--color-brand);
+  --brand-dark: var(--color-brand-dark);
+  --brand-soft: var(--color-brand-soft);
+  --surface: var(--color-surface);
+  --line: var(--color-line);
+  --ink: var(--color-ink);
+  --muted: var(--color-muted);
+  --success: var(--color-success);
+  --success-soft: var(--color-success-soft);
+  --warning: var(--color-warning);
+  --warning-soft: var(--color-warning-soft);
+  --danger: var(--color-danger);
+  --danger-soft: var(--color-danger-soft);
   --brand-gradient: linear-gradient(135deg, #f5c842 0%, #0d7a6a 50%, #1572b7 100%);
   color-scheme: light;
 }
@@ -254,6 +268,30 @@ html[dir="rtl"] .brand-font {
   border-radius: 8px;
 }
 
+.focus-ring:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--brand-soft);
+}
+
+.eyebrow {
+  font-size: var(--text-eyebrow);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.section-title {
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1.5;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -264,9 +302,29 @@ html[dir="rtl"] .brand-font {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes slideInStart {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInStartRtl {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
 @keyframes slideInEnd {
   from { opacity: 0; transform: translateX(24px); }
   to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInEndRtl {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
 }
 
 @keyframes shimmer {
@@ -274,15 +332,46 @@ html[dir="rtl"] .brand-font {
 }
 
 .animate-fade-in {
-  animation: fadeIn 180ms ease-out both;
+  animation: fadeIn var(--duration-fast) var(--ease-out) both;
 }
 
 .animate-slide-up {
-  animation: slideUp 220ms ease-out both;
+  animation: slideUp var(--duration-base) var(--ease-out) both;
+}
+
+.animate-slide-start {
+  animation: slideInStart var(--duration-base) var(--ease-out) both;
 }
 
 .animate-slide-end {
-  animation: slideInEnd 220ms ease-out both;
+  animation: slideInEnd var(--duration-base) var(--ease-out) both;
+}
+
+[dir="rtl"] .animate-slide-start {
+  animation-name: slideInStartRtl;
+}
+
+[dir="rtl"] .animate-slide-end {
+  animation-name: slideInEndRtl;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-slide-start,
+  .animate-slide-end,
+  .animate-float,
+  .skeleton::after {
+    animation: none !important;
+  }
 }
 
 .skeleton {

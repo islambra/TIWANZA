@@ -56,6 +56,7 @@ import {
   Tabs,
   Textarea,
 } from '../../components/ui.jsx'
+import { displayPaymentMethod, paymentMethodLabelKey } from '../../data/paymentMethods.js'
 import { StatusPill } from '../admin/AdminDashboard.jsx'
 import { cn, downloadCsv } from '../../lib/utils.js'
 
@@ -220,7 +221,7 @@ export function TrainerLearners() {
                       <ProgressBar value={progress.percentage} size="sm" className="flex-1" />
                       <span className="text-[10px] text-muted">{progress.percentage}%</span>
                     </div>
-                    <p className="mt-1 text-[10px] text-muted">{t('learner.lessonsCompleted', { completed: progress.completedLessons, total: progress.totalLessons })}</p>
+                    <p className="mt-1 text-[10px] text-muted">{t('learner.lessonsCompleted', { completed: progress.completed, total: progress.total })}</p>
                   </div>
                 )
               })}
@@ -304,7 +305,7 @@ export function TrainerEnrollments() {
                     <td><p className="text-xs font-medium text-ink">{learner?.name}</p><p className="text-[10px] text-muted">{learner?.email}</p></td>
                     <td className="max-w-[220px] truncate text-xs text-muted">{course?.title}</td>
                     <td className="text-xs font-semibold text-ink">{money(payment.amount)}</td>
-                    <td className="hidden sm:table-cell"><Badge tone={payment.method === 'manual' ? 'amber' : 'blue'}>{payment.method === 'manual' ? t('payments.manual') : t('payments.online')}</Badge></td>
+                    <td className="hidden sm:table-cell"><Badge tone={payment.method === 'manual' ? 'amber' : 'blue'}>{t(paymentMethodLabelKey(displayPaymentMethod(payment)))}</Badge></td>
                     <td className="hidden md:table-cell text-[11px] text-muted">{date(payment.submittedAt)}</td>
                     <td><StatusPill status={payment.status} t={t} /></td>
                     <td><div className="flex justify-end gap-1"><Button variant="ghost" size="xs" icon={Eye} onClick={() => setDetail(payment)}>{t('trainerEnrollments.viewReceipt')}</Button>{payment.status === 'pending' ? <><Button variant="success" size="xs" icon={CheckCircle2} onClick={() => approve(payment)}>{t('trainerEnrollments.approve')}</Button><Button variant="dangerSoft" size="xs" icon={XCircle} onClick={() => { setRejectTarget(payment); setReason('') }}>{t('trainerEnrollments.reject')}</Button></> : null}</div></td>
@@ -337,6 +338,7 @@ function ClockIcon(props) {
 function PaymentReceipt({ payment }) {
   const { t, dateTime, money } = useI18n()
   const state = useTiwanzaStore()
+  const [proofOpen, setProofOpen] = useState(false)
   const learner = state.users.find((item) => item.id === payment.learnerId)
   const course = getCourse(state, payment.courseId)
   return (
@@ -350,7 +352,7 @@ function PaymentReceipt({ payment }) {
         <ReceiptRow label={t('common.email')} value={learner?.email || '—'} />
         <ReceiptRow label={t('trainerEnrollments.tableCourse')} value={course?.title || '—'} />
         <ReceiptRow label={t('trainerEnrollments.reference')} value={payment.reference || '—'} />
-        <ReceiptRow label={t('trainerEnrollments.tableMethod')} value={payment.method === 'manual' ? t('payments.manual') : t('payments.online')} />
+        <ReceiptRow label={t('trainerEnrollments.tableMethod')} value={t(paymentMethodLabelKey(displayPaymentMethod(payment)))} />
         <ReceiptRow label={t('trainerEnrollments.submittedOn')} value={dateTime(payment.submittedAt)} />
         <ReceiptRow label={t('trainerEnrollments.reviewedOn')} value={payment.reviewedAt ? dateTime(payment.reviewedAt) : '—'} />
         <ReceiptRow label={t('common.status')} value={payment.status} />
@@ -358,10 +360,13 @@ function PaymentReceipt({ payment }) {
       <div className="rounded-xl border border-dashed border-line p-4">
         <p className="text-xs font-semibold text-ink">{t('trainerPayments.receipt')}</p>
         {payment.proofName ? (
-          <div className="mt-2 flex items-center gap-2 rounded-lg bg-surface p-2 text-[11px]"><FileIcon /> <span className="truncate">{payment.proofName}</span><Button variant="ghost" size="xs" icon={Download} className="ms-auto" onClick={() => {}}>{t('common.download')}</Button></div>
+          <div className="mt-2 flex items-center gap-2 rounded-lg bg-surface p-2 text-[11px]"><FileIcon /> <span className="truncate">{payment.proofName}</span><Button variant="ghost" size="xs" icon={Eye} className="ms-auto" onClick={() => setProofOpen(true)}>{t('common.view')}</Button></div>
         ) : <p className="mt-1 text-[11px] text-muted">{t('trainerEnrollments.noReceipt')}</p>}
       </div>
       {payment.rejectionReason ? <div className="rounded-xl bg-danger-soft p-3 text-[11px] text-danger"><strong>{t('trainerEnrollments.rejectReason')} : </strong>{payment.rejectionReason}</div> : null}
+      <Modal open={proofOpen} onClose={() => setProofOpen(false)} title={payment.proofName || t('trainerPayments.receipt')} size="lg" footer={<><Button variant="secondary" onClick={() => setProofOpen(false)}>{t('common.close')}</Button>{payment.proofDataUrl ? <a href={payment.proofDataUrl} download={payment.proofName || 'proof'} className="inline-flex h-9 items-center gap-2 rounded-lg bg-brand px-3 text-xs font-semibold text-white"><Download size={14} />{t('common.download')}</a> : null}</>}>
+        {payment.proofDataUrl?.startsWith('data:image/') ? <img src={payment.proofDataUrl} alt={payment.proofName || ''} className="max-h-[65vh] w-full rounded-lg object-contain" /> : <p className="text-xs text-muted">{t('trainerEnrollments.noReceipt')}</p>}
+      </Modal>
     </div>
   )
 }
@@ -392,7 +397,7 @@ export function TrainerPayments() {
   const allRows = getSalesRows(state, school.id).filter((row) => courseId === 'all' || row.payment.courseId === courseId)
   const rows = allRows
     .filter((row) => tab === 'all' || row.payment.status === tab)
-    .filter((row) => method === 'all' || row.payment.method === method)
+    .filter((row) => method === 'all' || displayPaymentMethod(row.payment) === method)
     .filter((row) => {
       const value = query.toLowerCase().trim()
       return !value || row.learner?.name?.toLowerCase().includes(value) || row.learner?.email?.toLowerCase().includes(value) || row.course?.title?.toLowerCase().includes(value) || row.payment.reference?.toLowerCase().includes(value)
@@ -456,7 +461,7 @@ export function TrainerPayments() {
             <SearchField value={query} onChange={setQuery} placeholder={t('trainerPayments.searchPlaceholder')} className="w-full sm:w-72" />
           </div>
           <div className="flex flex-wrap gap-2">
-            <Select value={method} onChange={(event) => setMethod(event.target.value)} className="w-auto min-w-36"><option value="all">{t('trainerPayments.allMethods')}</option><option value="online">{t('payments.online')}</option><option value="manual">{t('payments.manual')}</option></Select>
+            <Select value={method} onChange={(event) => setMethod(event.target.value)} className="w-auto min-w-36"><option value="all">{t('trainerPayments.allMethods')}</option>{[...new Set(allRows.map((row) => displayPaymentMethod(row.payment)))].map((item) => <option key={item} value={item}>{t(paymentMethodLabelKey(item))}</option>)}</Select>
             <Select value={courseId} onChange={(event) => setCourseId(event.target.value)} className="w-auto min-w-40"><option value="all">{t('trainerPayments.allCourses')}</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}</Select>
             <Badge tone="neutral">{t('trainerPayments.resultsCount', { count: rows.length })}</Badge>
           </div>
@@ -471,7 +476,7 @@ export function TrainerPayments() {
                   <td className="max-w-[200px] truncate text-xs text-muted">{row.course?.title}</td>
                   <td className="whitespace-nowrap text-xs font-semibold text-ink">{money(row.payment.amount)}</td>
                   <td className="hidden md:table-cell whitespace-nowrap text-xs text-muted">{money(Math.round(row.payment.amount * 0.9))}</td>
-                  <td className="hidden sm:table-cell"><Badge tone={row.payment.method === 'manual' ? 'amber' : 'blue'}>{row.payment.method === 'manual' ? t('payments.manual') : t('payments.online')}</Badge></td>
+                  <td className="hidden sm:table-cell"><Badge tone={row.payment.method === 'manual' ? 'amber' : 'blue'}>{t(paymentMethodLabelKey(displayPaymentMethod(row.payment)))}</Badge></td>
                   <td className="hidden lg:table-cell whitespace-nowrap text-[11px] text-muted">{date(row.payment.submittedAt)}</td>
                   <td><StatusPill status={row.payment.status} t={t} /></td>
                   <td><div className="flex justify-end"><Button variant="ghost" size="xs" icon={Eye} onClick={() => setDetail(row)}>{t('trainerPayments.viewDetails')}</Button></div></td>
@@ -506,6 +511,7 @@ function PaymentDetail({ row }) {
         <ReceiptRow label={t('trainerPayments.learnerEmail')} value={row.learner?.email || '—'} />
         <ReceiptRow label={t('trainerPayments.tableCourse')} value={row.course?.title || '—'} />
         <ReceiptRow label={t('trainerPayments.reference')} value={row.payment.reference || '—'} />
+        <ReceiptRow label={t('trainerPayments.paymentMethod')} value={t(paymentMethodLabelKey(displayPaymentMethod(row.payment)))} />
         <ReceiptRow label={t('trainerPayments.paymentDate')} value={dateTime(row.payment.submittedAt)} />
         <ReceiptRow label={t('trainerPayments.commission')} value={money(Math.round(row.payment.amount * 0.1))} />
         <ReceiptRow label={t('trainerPayments.netAmount')} value={money(Math.round(row.payment.amount * 0.9))} />
@@ -602,7 +608,7 @@ export function TrainerSales() {
         {filtered.length ? (
           <Table>
             <thead><tr><th>{t('trainerSales.tableLearner')}</th><th>{t('trainerSales.tableCourse')}</th><th>{t('trainerSales.tableAmount')}</th><th className="hidden sm:table-cell">{t('trainerSales.tableMethod')}</th><th className="hidden md:table-cell">{t('trainerSales.tableDate')}</th><th>{t('common.status')}</th></tr></thead>
-            <tbody>{filtered.map((row) => <tr key={row.payment.id}><td><div className="flex items-center gap-2"><Avatar name={row.learner?.name} size="xs" /><span className="text-xs text-ink">{row.learner?.name}</span></div></td><td className="max-w-[220px] truncate text-xs text-muted">{row.course?.title}</td><td className="text-xs font-semibold text-ink">{money(row.payment.amount)}</td><td className="hidden sm:table-cell"><Badge tone={row.payment.method === 'manual' ? 'amber' : 'blue'}>{row.payment.method === 'manual' ? t('payments.manual') : t('payments.online')}</Badge></td><td className="hidden md:table-cell text-[11px] text-muted">{date(row.payment.submittedAt)}</td><td><StatusPill status={row.payment.status} t={t} /></td></tr>)}</tbody>
+            <tbody>{filtered.map((row) => <tr key={row.payment.id}><td><div className="flex items-center gap-2"><Avatar name={row.learner?.name} size="xs" /><span className="text-xs text-ink">{row.learner?.name}</span></div></td><td className="max-w-[220px] truncate text-xs text-muted">{row.course?.title}</td><td className="text-xs font-semibold text-ink">{money(row.payment.amount)}</td><td className="hidden sm:table-cell"><Badge tone={row.payment.method === 'manual' ? 'amber' : 'blue'}>{t(paymentMethodLabelKey(displayPaymentMethod(row.payment)))}</Badge></td><td className="hidden md:table-cell text-[11px] text-muted">{date(row.payment.submittedAt)}</td><td><StatusPill status={row.payment.status} t={t} /></td></tr>)}</tbody>
           </Table>
         ) : <EmptyState icon={CreditCard} title={t('trainerSales.noTransactions')} compact />}
       </Card>

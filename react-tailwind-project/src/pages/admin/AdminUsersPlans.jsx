@@ -14,6 +14,7 @@ import {
   UserRound,
   Users,
   Wallet,
+  X,
 } from 'lucide-react'
 import { useI18n } from '../../i18n/I18nContext.jsx'
 import { useToast } from '../../context/ToastContext.jsx'
@@ -25,6 +26,15 @@ import {
   getTrainerProfile,
   isUnlimited,
 } from '../../data/selectors.js'
+import {
+  PLAN_CATALOG,
+  PLAN_CODES,
+  PLAN_FEATURE_KEYS,
+  PLAN_LIMIT_KEYS,
+  getPlanDescription,
+  getPlanName,
+  hasPlanFeature,
+} from '../../data/plans.js'
 import { togglePlan, updatePlan, updateUser } from '../../data/services.js'
 import {
   Avatar,
@@ -44,7 +54,6 @@ import {
   StatCard,
   Table,
   Tabs,
-  Textarea,
 } from '../../components/ui.jsx'
 import { StatusPill } from './AdminDashboard.jsx'
 import { cn } from '../../lib/utils.js'
@@ -255,7 +264,7 @@ export function AdminUsers() {
 }
 
 function TrainerProfileDetails({ user }) {
-  const { t } = useI18n()
+  const { t, language } = useI18n()
   const state = useTiwanzaStore()
   const profile = getTrainerProfile(state, user.id)
   const school = profile?.schoolId ? getSchool(state, profile.schoolId) : null
@@ -263,7 +272,7 @@ function TrainerProfileDetails({ user }) {
   return (
     <>
       <Detail label={t('adminUsers.tableSchool')} value={school?.name || t('adminUsers.noSchool')} />
-      <Detail label={t('adminSubscriptions.tablePlan')} value={plan?.nameFr || '—'} />
+      <Detail label={t('adminSubscriptions.tablePlan')} value={getPlanName(plan, language) || '—'} />
     </>
   )
 }
@@ -292,38 +301,41 @@ function Detail({ label, value }) {
 
 export function AdminPlans() {
   const { t, language, number, money } = useI18n()
-  const { success } = useToast()
+  const { success, error: toastError } = useToast()
   const state = useTiwanzaStore()
   const [editTarget, setEditTarget] = useState(null)
   const [form, setForm] = useState(null)
-  const plans = state.plans.slice().sort((a, b) => a.order - b.order)
+  const plans = PLAN_CATALOG
+    .map((catalog) => state.plans.find((plan) => plan.id === catalog.id) || catalog)
+    .sort((a, b) => a.order - b.order)
 
   function startEdit(plan) {
     setEditTarget(plan)
     setForm({
       priceDA: plan.priceDA,
       publishedCourses: plan.limits.publishedCourses,
+      paidCourses: plan.limits.paidCourses,
       learners: plan.limits.learners,
       storageGb: plan.limits.storageGb,
-      features: (language === 'ar' ? plan.featuresAr : plan.featuresFr).join('\n'),
+      trainers: plan.limits.trainers,
       enabled: plan.enabled,
     })
   }
 
   function save() {
     if (!editTarget || !form) return
-    const features = form.features.split('\n').map((line) => line.trim()).filter(Boolean)
-    updatePlan(editTarget.id, {
+    const result = updatePlan(editTarget.id, {
       priceDA: Number(form.priceDA) || 0,
       enabled: form.enabled,
       limits: {
         publishedCourses: Number(form.publishedCourses),
-        paidCourses: Number(form.publishedCourses),
+        paidCourses: Number(form.paidCourses),
         learners: Number(form.learners),
         storageGb: Number(form.storageGb),
+        trainers: Number(form.trainers),
       },
-      [language === 'ar' ? 'featuresAr' : 'featuresFr']: features,
     })
+    if (result && !result.ok) return toastError(t('errors.generic'))
     success(t('adminPlans.saveSuccess'))
     setEditTarget(null)
     setForm(null)
@@ -348,23 +360,23 @@ export function AdminPlans() {
       <div className="grid gap-4 lg:grid-cols-2">
         {plans.map((plan) => {
           const stats = planStats(plan)
-          const isPro = plan.code === 'pro'
+          const isBusiness = plan.code === PLAN_CODES.BUSINESS || plan.recommended
           return (
-            <Card key={plan.id} className={cn('overflow-hidden', isPro && 'border-brand/30')}>
-              <div className={cn('flex items-start justify-between gap-3 p-5', isPro ? 'bg-gradient-to-br from-brand-soft/80 to-white' : 'bg-surface/50')}>
+            <Card key={plan.id} className={cn('overflow-hidden', isBusiness && 'border-brand/30')}>
+              <div className={cn('flex items-start justify-between gap-3 p-5', isBusiness ? 'bg-gradient-to-br from-brand-soft/80 to-white' : 'bg-surface/50')}>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-bold text-ink">{language === 'ar' ? plan.nameAr : plan.nameFr}</h2>
+                    <h2 className="text-lg font-bold text-ink">{getPlanName(plan, language)}</h2>
                     <Badge tone={plan.enabled ? 'success' : 'neutral'} dot>{plan.enabled ? t('common.active') : t('common.inactive')}</Badge>
-                    {isPro ? <Badge tone="purple">{t('adminPlans.recommended')}</Badge> : null}
+                    {plan.recommended ? <Badge tone="purple">{t('plans.recommended')}</Badge> : null}
                   </div>
-                  <p className="mt-1 text-xs leading-relaxed text-muted">{language === 'ar' ? plan.descAr : plan.descFr}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted">{getPlanDescription(plan, language)}</p>
                   <div className="mt-3 flex items-end gap-1">
                     <span className="brand-font text-3xl font-bold text-ink">{money(plan.priceDA)}</span>
-                    <span className="pb-1 text-[11px] text-muted">{plan.priceDA ? t('common.perMonth') : t('subscription.freeForever')}</span>
+                    <span className="pb-1 text-[11px] text-muted">{t('common.perMonth')}</span>
                   </div>
                 </div>
-                <span className={cn('grid h-11 w-11 place-items-center rounded-xl', isPro ? 'bg-brand text-white' : 'bg-white text-muted shadow-sm')}><Sparkles size={20} /></span>
+                <span className={cn('grid h-11 w-11 place-items-center rounded-xl', isBusiness ? 'bg-brand text-white' : 'bg-white text-muted shadow-sm')}><Sparkles size={20} /></span>
               </div>
 
               <div className="grid grid-cols-3 divide-x divide-line border-y border-line text-center rtl:divide-x-reverse">
@@ -384,15 +396,24 @@ export function AdminPlans() {
 
               <div className="p-5">
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <LimitRow label={t('adminPlans.maxCourses')} value={plan.limits.publishedCourses} />
-                  <LimitRow label={t('adminPlans.maxLearners')} value={plan.limits.learners} />
-                  <LimitRow label={t('adminPlans.maxTrainers')} value={plan.limits.trainers} />
-                  <LimitRow label={t('limits.storage')} value={plan.limits.storageGb} unit="Go" />
-                </div>
-                <div className="mt-4 space-y-1.5">
-                  {(language === 'ar' ? plan.featuresAr : plan.featuresFr).map((feature) => (
-                    <div key={feature} className="flex items-start gap-2 text-[11px] text-muted"><Check size={12} className="mt-0.5 shrink-0 text-brand" />{feature}</div>
+                  {PLAN_LIMIT_KEYS.map((key) => (
+                    <LimitRow key={key} label={t(`plans.limits.${key}`)} value={plan.limits[key]} unit={key === 'storageGb' ? 'Go' : ''} />
                   ))}
+                </div>
+                <div className="mt-4 flex flex-wrap items-center gap-3 text-[10px] text-muted">
+                  <span className="inline-flex items-center gap-1"><Check size={12} className="text-brand" />{t('plans.included')}</span>
+                  <span className="inline-flex items-center gap-1"><X size={12} className="text-muted/50" />{t('plans.notIncluded')}</span>
+                </div>
+                <div className="mt-2 space-y-1.5">
+                  {PLAN_FEATURE_KEYS.map((key) => {
+                    const included = hasPlanFeature(plan, key)
+                    return (
+                      <div key={key} className={cn('flex items-start gap-2 text-[11px]', included ? 'text-muted' : 'text-muted/60')}>
+                        {included ? <Check size={12} className="mt-0.5 shrink-0 text-brand" /> : <X size={12} className="mt-0.5 shrink-0 text-muted/50" />}
+                        <span>{t(`plans.features.${key}`)}</span>
+                      </div>
+                    )
+                  })}
                 </div>
                 <div className="mt-4 flex gap-2">
                   <Button variant="secondary" size="sm" icon={Pencil} onClick={() => startEdit(plan)}>{t('adminPlans.editPlan')}</Button>
@@ -400,7 +421,11 @@ export function AdminPlans() {
                     variant={plan.enabled ? 'ghost' : 'soft'}
                     size="sm"
                     icon={plan.enabled ? ToggleRight : ToggleLeft}
-                    onClick={() => { togglePlan(plan.id, !plan.enabled); success(t('adminPlans.saveSuccess')) }}
+                    onClick={() => {
+                      const result = togglePlan(plan.id, !plan.enabled)
+                      if (result && !result.ok) return toastError(t('errors.generic'))
+                      success(t('adminPlans.saveSuccess'))
+                    }}
                   >
                     {plan.enabled ? t('common.inactive') : t('common.active')}
                   </Button>
@@ -412,15 +437,15 @@ export function AdminPlans() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-line bg-brand-soft/50 p-4 text-xs leading-relaxed text-brand-dark">{t('adminPlans.freeNotice')}</div>
-        <div className="rounded-xl border border-line bg-surface p-4 text-xs leading-relaxed text-muted">{t('adminPlans.proNotice')}</div>
+        <div className="rounded-xl border border-line bg-brand-soft/50 p-4 text-xs leading-relaxed text-brand-dark">{t('adminPlans.starterNotice')}</div>
+        <div className="rounded-xl border border-line bg-surface p-4 text-xs leading-relaxed text-muted">{t('adminPlans.businessNotice')}</div>
       </div>
 
       <Modal
         open={Boolean(editTarget)}
         onClose={() => { setEditTarget(null); setForm(null) }}
         title={t('adminPlans.editPlan')}
-        description={editTarget ? (language === 'ar' ? editTarget.nameAr : editTarget.nameFr) : ''}
+        description={getPlanName(editTarget, language)}
         footer={<><Button variant="secondary" onClick={() => { setEditTarget(null); setForm(null) }}>{t('common.cancel')}</Button><Button onClick={save}>{t('common.save')}</Button></>}
       >
         {form ? (
@@ -429,16 +454,14 @@ export function AdminPlans() {
               <Label>{t('adminPlans.priceDA')}</Label>
               <Input type="number" value={form.priceDA} onChange={(event) => setForm({ ...form, priceDA: event.target.value })} />
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div><Label>{t('adminPlans.maxCourses')}</Label><Input type="number" value={form.publishedCourses} onChange={(event) => setForm({ ...form, publishedCourses: event.target.value })} /></div>
-              <div><Label>{t('adminPlans.maxLearners')}</Label><Input type="number" value={form.learners} onChange={(event) => setForm({ ...form, learners: event.target.value })} /></div>
-              <div><Label>{t('limits.storage')} (Go)</Label><Input type="number" value={form.storageGb} onChange={(event) => setForm({ ...form, storageGb: event.target.value })} /></div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div><Label>{t('plans.limits.publishedCourses')}</Label><Input type="number" value={form.publishedCourses} onChange={(event) => setForm({ ...form, publishedCourses: event.target.value })} /></div>
+              <div><Label>{t('plans.limits.paidCourses')}</Label><Input type="number" value={form.paidCourses} onChange={(event) => setForm({ ...form, paidCourses: event.target.value })} /></div>
+              <div><Label>{t('plans.limits.learners')}</Label><Input type="number" value={form.learners} onChange={(event) => setForm({ ...form, learners: event.target.value })} /></div>
+              <div><Label>{t('plans.limits.storageGb')} (Go)</Label><Input type="number" value={form.storageGb} onChange={(event) => setForm({ ...form, storageGb: event.target.value })} /></div>
+              <div><Label>{t('plans.limits.trainers')}</Label><Input type="number" value={form.trainers} onChange={(event) => setForm({ ...form, trainers: event.target.value })} /></div>
             </div>
             <p className="text-[10px] text-muted">{t('common.unlimited')} = -1</p>
-            <div>
-              <Label>{t('adminPlans.features')}</Label>
-              <Textarea rows={6} value={form.features} onChange={(event) => setForm({ ...form, features: event.target.value })} />
-            </div>
             <Checkbox checked={form.enabled} onChange={(event) => setForm({ ...form, enabled: event.target.checked })} label={t('common.active')} />
             <p className="text-[10px] text-muted">{t('adminPlans.simulatedNote')}</p>
           </div>

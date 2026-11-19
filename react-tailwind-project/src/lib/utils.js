@@ -203,14 +203,19 @@ export function downloadCsv(filename, rows) {
 
 export function paymentMethodLabelKey(method) {
   const map = {
+    chargily: 'payments.chargily',
     cib: 'payments.cib',
     edahabia: 'payments.edahabia',
     ccp: 'payments.ccp',
+    ccpRip: 'payments.ccpRip',
     baridimob: 'payments.baridimob',
-    bank: 'payments.bank',
+    bank: 'payments.bankTransfer',
+    bankTransfer: 'payments.bankTransfer',
+    cash: 'payments.cash',
+    inPerson: 'payments.inPerson',
     online: 'payments.online',
     manual: 'payments.manual',
-    free: 'payments.free',
+    free: 'common.free',
   }
   return map[method] || 'payments.manual'
 }

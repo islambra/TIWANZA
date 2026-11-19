@@ -39,15 +39,10 @@ export function I18nProvider({ children }) {
       language,
       dir: language === 'ar' ? 'rtl' : 'ltr',
       isRtl: language === 'ar',
-setLanguage: (next) => {
-    const normalized = next === 'ar' ? 'ar' : next === 'en' ? 'en' : 'fr'
-    setLanguageState(normalized)
-  },
-  toggleLanguage: () => setLanguageState((current) => {
-    if (current === 'ar') return 'en'
-    if (current === 'en') return 'fr'
-    return 'ar'
-  }),
+      setLanguage: (next) => {
+        const normalized = next === 'ar' ? 'ar' : next === 'en' ? 'en' : 'fr'
+        setLanguageState(normalized)
+      },
       t,
       money: (amount) => formatDA(amount, language),
       number: (value) => formatNumber(value, language),

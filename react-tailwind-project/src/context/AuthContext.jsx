@@ -15,6 +15,12 @@ export function AuthProvider({ children }) {
   const state = useTiwanzaStore()
   const user = state.session ? state.users.find((item) => item.id === state.session.userId) || null : null
   const profile = user?.role === 'trainer' ? getTrainerProfile(state, user.id) : null
+  const school = user?.schoolId ? state.schools.find((item) => item.id === user.schoolId) : null
+  const home = user?.role === 'trainer' && !user.schoolId
+    ? '/onboarding'
+    : user?.role === 'learner' && school
+      ? `/s/${school.slug}/learn`
+      : roleHome[user?.role] || '/'
 
   const value = useMemo(
     () => ({
@@ -30,9 +36,9 @@ export function AuthProvider({ children }) {
       registerLearner: services.registerLearner,
       registerTrainer: services.registerTrainer,
       updateUser: services.updateUser,
-      home: user ? roleHome[user.role] : '/login',
+      home,
     }),
-    [user, profile],
+    [user, profile, home],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

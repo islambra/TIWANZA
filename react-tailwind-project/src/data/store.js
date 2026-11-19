@@ -10,9 +10,9 @@ function loadInitialState() {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      if (parsed && parsed.version === 2) return parsed
-      if (parsed && parsed.version === 1) {
-        const migrated = migrateState(parsed)
+      if (parsed && parsed.version === 7) return parsed
+      if (parsed && (parsed.version === 1 || parsed.version === 2 || parsed.version === 3 || parsed.version === 4 || parsed.version === 5 || parsed.version === 6)) {
+        const migrated = parsed.version === 6 ? createSeedData() : migrateState(parsed)
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated))
         return migrated
       }

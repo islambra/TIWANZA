@@ -29,12 +29,28 @@ import {
 import { useI18n } from '../../i18n/I18nContext.jsx'
 import { useToast } from '../../context/ToastContext.jsx'
 import { useTiwanzaStore } from '../../data/store.js'
-import { getCourse, getSchool, getTrainerBySchool } from '../../data/selectors.js'
+import {
+  canUsePlanFeature,
+  getCourse,
+  getCoursePaymentOptions,
+  getSchool,
+  getSchoolPaymentMethodStatus,
+  getSubscriptionPaymentOptions,
+  getTrainerBySchool,
+} from '../../data/selectors.js'
 import {
   resetDemoData,
   updatePlatformSettings,
   updateSupportRequestStatus,
 } from '../../data/services.js'
+import {
+  COURSE_MANUAL_METHODS,
+  COURSE_ONLINE_METHODS,
+  SUBSCRIPTION_MANUAL_METHODS,
+  defaultPlatformPaymentSettings,
+  paymentMethodDescriptionKey,
+  paymentMethodLabelKey,
+} from '../../data/paymentMethods.js'
 import {
   Alert,
   Avatar,
@@ -59,14 +75,58 @@ import {
 import { activityKey } from './AdminDashboard.jsx'
 import { cn, downloadCsv } from '../../lib/utils.js'
 
+const ONLINE_METHODS = ['chargily', ...COURSE_ONLINE_METHODS]
+const MANUAL_METHODS = [...new Set([...SUBSCRIPTION_MANUAL_METHODS, ...COURSE_MANUAL_METHODS])]
+
+function normalizePaymentSettings(settings = {}) {
+  const defaults = defaultPlatformPaymentSettings()
+  return {
+    ...defaults,
+    ...settings,
+    methods: { ...defaults.methods, ...settings.methods },
+    manualPayment: {
+      ...defaults.manualPayment,
+      ...settings.manualPayment,
+      bank: { ...defaults.manualPayment.bank, ...settings.manualPayment?.bank },
+    },
+  }
+}
+
+function manualMethodMissingDetails(manual, method) {
+  if (method === 'ccp') return !(manual?.ccp || manual?.accountNumber)
+  if (method === 'baridimob') return !manual?.baridimob
+  if (method === 'bankTransfer') return !(manual?.bank?.rib || manual?.bank?.name)
+  if (method === 'cash') return !(manual?.cashInstructionsFr || manual?.cashInstructionsAr)
+  if (method === 'inPerson') return !(manual?.inPersonInstructionsFr || manual?.inPersonInstructionsAr)
+  if (method === 'ccpRip') return !(manual?.ccp || manual?.rib || manual?.bank?.rib)
+  return false
+}
+
 export function AdminSettings() {
-  const { t, language, number } = useI18n()
-  const { success } = useToast()
+  const { t, number } = useI18n()
+  const { success, error: toastError } = useToast()
   const state = useTiwanzaStore()
   const [tab, setTab] = useState('general')
-  const [form, setForm] = useState(() => ({ ...state.platformSettings, commission: state.platformSettings.commission ?? 10 }))
+  const [form, setForm] = useState(() => ({
+    ...normalizePaymentSettings(state.platformSettings),
+    commission: state.platformSettings.commission ?? 10,
+  }))
+  const [settingsError, setSettingsError] = useState('')
   const [resetOpen, setResetOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  const subscriptionOptions = useMemo(() => getSubscriptionPaymentOptions(state), [state])
+  const courseOptionIds = useMemo(() => {
+    const ids = new Set()
+    state.schools.forEach((school) => {
+      getCoursePaymentOptions(state, school).forEach((option) => ids.add(option.id))
+    })
+    return [...ids]
+  }, [state])
+  const onlineSchools = useMemo(
+    () => state.schools.filter((school) => getSchoolPaymentMethodStatus(school, state).online).length,
+    [state],
+  )
 
   const tabs = [
     { value: 'general', label: t('adminSettings.general') },
@@ -75,6 +135,18 @@ export function AdminSettings() {
   ]
 
   function save() {
+    const missing = form.methods?.manual
+      ? MANUAL_METHODS.filter((method) => form.methods[method] !== false && manualMethodMissingDetails(form.manualPayment, method))
+      : []
+    if (missing.length) {
+      const message = t('adminSettings.methodDetailsRequired', {
+        methods: missing.map((method) => t(paymentMethodLabelKey(method))).join(', '),
+      })
+      setSettingsError(message)
+      toastError(message)
+      return
+    }
+    setSettingsError('')
     setSaving(true)
     window.setTimeout(() => {
       updatePlatformSettings(form)
@@ -100,6 +172,17 @@ export function AdminSettings() {
       manualPayment: {
         ...current.manualPayment,
         bank: { ...current.manualPayment.bank, ...patch },
+      },
+    }))
+  }
+
+  function updateRib(value) {
+    setForm((current) => ({
+      ...current,
+      manualPayment: {
+        ...current.manualPayment,
+        rib: value,
+        bank: { ...current.manualPayment.bank, rib: value },
       },
     }))
   }
@@ -197,14 +280,49 @@ export function AdminSettings() {
 
           {tab === 'payments' ? (
             <>
+              {settingsError ? <Alert tone="danger" title={t('errors.requiredFields')}>{settingsError}</Alert> : null}
+
               <Card>
                 <CardHeader title={t('adminSettings.payments')} description={t('adminSettings.commissionDesc')} />
                 <div className="space-y-4 p-5">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <ToggleCard label={t('adminSettings.onlinePayments')} description={t('adminSettings.onlinePaymentsDesc')} checked={Boolean(form.methods?.online)} onChange={() => toggleMethod('online')} />
+                  <div>
+                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-muted">{t('payments.online')}</p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <ToggleCard label={t('adminSettings.onlinePayments')} description={t('adminSettings.onlinePaymentsDesc')} checked={Boolean(form.methods?.online)} onChange={() => toggleMethod('online')} />
+                      {ONLINE_METHODS.map((method) => (
+                        <ToggleCard
+                          key={method}
+                          label={t(paymentMethodLabelKey(method))}
+                          description={t(paymentMethodDescriptionKey(method))}
+                          checked={Boolean(form.methods?.[method])}
+                          onChange={() => toggleMethod(method)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-muted">{t('payments.manual')}</p>
                     <ToggleCard label={t('adminSettings.manualPayments')} description={t('adminSettings.manualPaymentsDesc')} checked={Boolean(form.methods?.manual)} onChange={() => toggleMethod('manual')} />
-                    <ToggleCard label={t('payments.cib')} description={t('payments.cibDesc')} checked={Boolean(form.methods?.cib)} onChange={() => toggleMethod('cib')} />
-                    <ToggleCard label={t('payments.edahabia')} description={t('payments.edahabiaDesc')} checked={Boolean(form.methods?.edahabia)} onChange={() => toggleMethod('edahabia')} />
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      {MANUAL_METHODS.map((method) => {
+                        const checked = Boolean(form.methods?.[method])
+                        const invalid = Boolean(form.methods?.manual) && checked && manualMethodMissingDetails(form.manualPayment, method)
+                        const scopes = [
+                          SUBSCRIPTION_MANUAL_METHODS.includes(method) ? t('adminPayments.tabSubscriptions') : null,
+                          COURSE_MANUAL_METHODS.includes(method) ? t('adminPayments.tabCourses') : null,
+                        ].filter(Boolean)
+                        return (
+                          <ToggleCard
+                            key={method}
+                            label={t(paymentMethodLabelKey(method))}
+                            description={`${t(paymentMethodDescriptionKey(method))} · ${scopes.join(' / ')}`}
+                            checked={checked}
+                            invalid={invalid}
+                            onChange={() => toggleMethod(method)}
+                          />
+                        )
+                      })}
+                    </div>
                   </div>
                   <div>
                     <Label>{t('adminSettings.commission')}</Label>
@@ -218,24 +336,48 @@ export function AdminSettings() {
               </Card>
 
               <Card>
-                <CardHeader title={t('adminSettings.bankDetails')} />
+                <CardHeader title={t('adminSettings.bankDetails')} description={t('payments.manualDesc')} />
                 <div className="space-y-4 p-5">
                   <div className="grid gap-4 sm:grid-cols-2">
+                    <div><Label>{t('payments.ccp')}</Label><Input value={form.manualPayment?.ccp || ''} onChange={(event) => updateManual({ ccp: event.target.value })} /></div>
+                    <div><Label>{t('adminSettings.rib')}</Label><Input value={form.manualPayment?.rib || form.manualPayment?.bank?.rib || ''} onChange={(event) => updateRib(event.target.value)} /></div>
+                    <div><Label>{t('payments.baridimob')}</Label><Input value={form.manualPayment?.baridimob || ''} onChange={(event) => updateManual({ baridimob: event.target.value })} /></div>
                     <div><Label>{t('adminSettings.bankName')}</Label><Input value={form.manualPayment?.bank?.name || ''} onChange={(event) => updateBank({ name: event.target.value })} /></div>
                     <div><Label>{t('adminSettings.accountName')}</Label><Input value={form.manualPayment?.beneficiary || ''} onChange={(event) => updateManual({ beneficiary: event.target.value })} /></div>
-                    <div><Label>CCP</Label><Input value={form.manualPayment?.ccp || ''} onChange={(event) => updateManual({ ccp: event.target.value })} /></div>
-                    <div><Label>BaridiMob</Label><Input value={form.manualPayment?.baridimob || ''} onChange={(event) => updateManual({ baridimob: event.target.value })} /></div>
-                    <div><Label>{t('adminSettings.rib')}</Label><Input value={form.manualPayment?.bank?.rib || ''} onChange={(event) => updateBank({ rib: event.target.value })} /></div>
-                    <div><Label>{t('adminSettings.accountNumber')}</Label><Input value={form.manualPayment?.bank?.agency || ''} onChange={(event) => updateBank({ agency: event.target.value })} /></div>
+                    <div><Label>{t('common.agency')}</Label><Input value={form.manualPayment?.bank?.agency || ''} onChange={(event) => updateBank({ agency: event.target.value })} /></div>
+                    <div><Label>{t('common.delay')}</Label><Input value={form.manualPayment?.delay || ''} onChange={(event) => updateManual({ delay: event.target.value })} /></div>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div><Label>{t('adminSettings.instructionsFr')}</Label><Textarea rows={3} value={form.manualPayment?.instructionsFr || ''} onChange={(event) => updateManual({ instructionsFr: event.target.value })} /></div>
+                    <div><Label>{t('adminSettings.instructionsAr')}</Label><Textarea rows={3} dir="rtl" value={form.manualPayment?.instructionsAr || ''} onChange={(event) => updateManual({ instructionsAr: event.target.value })} /></div>
+                    <div><Label>{t('adminSettings.cashInstructionsFr')}</Label><Textarea rows={3} value={form.manualPayment?.cashInstructionsFr || ''} onChange={(event) => updateManual({ cashInstructionsFr: event.target.value })} /></div>
+                    <div><Label>{t('adminSettings.cashInstructionsAr')}</Label><Textarea rows={3} dir="rtl" value={form.manualPayment?.cashInstructionsAr || ''} onChange={(event) => updateManual({ cashInstructionsAr: event.target.value })} /></div>
+                    <div><Label>{t('adminSettings.inPersonInstructionsFr')}</Label><Textarea rows={3} value={form.manualPayment?.inPersonInstructionsFr || ''} onChange={(event) => updateManual({ inPersonInstructionsFr: event.target.value })} /></div>
+                    <div><Label>{t('adminSettings.inPersonInstructionsAr')}</Label><Textarea rows={3} dir="rtl" value={form.manualPayment?.inPersonInstructionsAr || ''} onChange={(event) => updateManual({ inPersonInstructionsAr: event.target.value })} /></div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card>
+                <CardHeader title={t('adminPayments.allMethods')} />
+                <div className="space-y-3 p-5 text-xs">
+                  <div>
+                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-muted">{t('adminPayments.tabSubscriptions')}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {subscriptionOptions.length ? subscriptionOptions.map((option) => (
+                        <Badge key={option.id} tone="neutral">{t(option.labelKey)}</Badge>
+                      )) : <span className="text-muted">{t('common.none')}</span>}
+                    </div>
                   </div>
                   <div>
-                    <Label>{t('adminSettings.instructionsFr') || 'Instructions FR'}</Label>
-                    <Textarea rows={3} value={form.manualPayment?.instructionsFr || ''} onChange={(event) => updateManual({ instructionsFr: event.target.value })} />
+                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-muted">{t('adminPayments.tabCourses')}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {courseOptionIds.length ? courseOptionIds.map((id) => (
+                        <Badge key={id} tone="neutral">{t(paymentMethodLabelKey(id))}</Badge>
+                      )) : <span className="text-muted">{t('common.none')}</span>}
+                    </div>
                   </div>
-                  <div>
-                    <Label>{t('adminSettings.instructionsAr') || 'Instructions AR'}</Label>
-                    <Textarea rows={3} dir="rtl" value={form.manualPayment?.instructionsAr || ''} onChange={(event) => updateManual({ instructionsAr: event.target.value })} />
-                  </div>
+                  <p className="text-[10px] text-muted">{t('adminSettings.onlinePayments')}: {number(onlineSchools)}</p>
                 </div>
               </Card>
             </>
@@ -259,7 +401,7 @@ export function AdminSettings() {
                 <Alert tone="danger" title={t('adminSettings.resetConfirm')}>{t('adminSettings.resetConfirmDesc')}</Alert>
                 <div className="flex flex-wrap gap-2">
                   <Button variant="danger" icon={RotateCcw} onClick={() => setResetOpen(true)}>{t('adminSettings.resetDemo')}</Button>
-                  <Button variant="secondary" icon={RefreshCcw} onClick={() => setForm({ ...state.platformSettings })}>{t('common.cancel')}</Button>
+                  <Button variant="secondary" icon={RefreshCcw} onClick={() => setForm({ ...normalizePaymentSettings(state.platformSettings), commission: state.platformSettings.commission ?? 10 })}>{t('common.cancel')}</Button>
                 </div>
               </div>
             </Card>
@@ -280,18 +422,18 @@ export function AdminSettings() {
   )
 }
 
-function ToggleCard({ label, description, checked, onChange }) {
+function ToggleCard({ label, description, checked, onChange, invalid }) {
   return (
     <button
       type="button"
       onClick={onChange}
       className={cn(
         'flex items-start gap-3 rounded-xl border p-3 text-start transition',
-        checked ? 'border-brand/30 bg-brand-soft/40' : 'border-line bg-white hover:bg-surface/60',
+        invalid ? 'border-danger/40 bg-danger-soft/40' : checked ? 'border-brand/30 bg-brand-soft/40' : 'border-line bg-white hover:bg-surface/60',
       )}
     >
-      <span className={cn('mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg', checked ? 'bg-brand text-white' : 'bg-surface text-muted')}>
-        {checked ? <CheckCircle2 size={16} /> : <Server size={16} />}
+      <span className={cn('mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg', invalid ? 'bg-danger text-white' : checked ? 'bg-brand text-white' : 'bg-surface text-muted')}>
+        {invalid ? <AlertTriangle size={16} /> : checked ? <CheckCircle2 size={16} /> : <Server size={16} />}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-xs font-semibold text-ink">{label}</span>
@@ -318,9 +460,18 @@ export function AdminSupport() {
   const [reply, setReply] = useState('')
   const [replies, setReplies] = useState({})
 
+  function hasPrioritySupport(request) {
+    return canUsePlanFeature(state, request.schoolId, 'prioritySupport')
+  }
+
   const requests = state.supportRequests
     .slice()
-    .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
+    .sort((a, b) => {
+      const priorityA = hasPrioritySupport(a) ? 1 : 0
+      const priorityB = hasPrioritySupport(b) ? 1 : 0
+      if (priorityA !== priorityB) return priorityB - priorityA
+      return new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
+    })
     .filter((request) => tab === 'all' || request.status === tab)
     .filter((request) => priority === 'all' || request.priority === priority)
     .filter((request) => {
@@ -414,6 +565,7 @@ export function AdminSupport() {
                     <td>
                       <button type="button" onClick={() => { setSelected(request); setReply('') }} className="max-w-[280px] truncate text-start text-xs font-semibold text-ink hover:text-brand">{request.subject}</button>
                       <p className="mt-0.5 max-w-[280px] truncate text-[10px] text-muted">{request.message}</p>
+                      {hasPrioritySupport(request) ? <Badge tone="purple" className="mt-1">{t('plans.features.prioritySupport')}</Badge> : null}
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
@@ -463,6 +615,7 @@ export function AdminSupport() {
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone={SUPPORT_STATUS_TONES[selected.status] || 'neutral'} dot>{t(`adminSupport.${selected.status === 'pending' ? 'inProgress' : selected.status}`)}</Badge>
               <Badge tone={PRIORITY_TONES[selected.priority] || 'neutral'}>{t(`adminSupport.${selected.priority}`)}</Badge>
+              {hasPrioritySupport(selected) ? <Badge tone="purple">{t('plans.features.prioritySupport')}</Badge> : null}
               <span className="text-[10px] text-muted">{dateTime(selected.createdAt)}</span>
             </div>
 
@@ -519,7 +672,7 @@ const ACTIVITY_GROUPS = {
   schools: ['trainer_registered', 'school_created', 'school_updated'],
   payments: ['course_payment_pending', 'course_payment_validated', 'course_payment_rejected', 'subscription_manual', 'subscription_paid', 'subscription_approved', 'subscription_rejected'],
   courses: ['course_created', 'course_published', 'course_updated', 'course_deleted', 'enrollment_created', 'lesson_completed', 'quiz_passed', 'announcement_published', 'comment_created', 'event_created'],
-  subscriptions: ['subscription_manual', 'subscription_paid', 'subscription_approved', 'subscription_rejected', 'subscription_free', 'plan_updated'],
+  subscriptions: ['subscription_manual', 'subscription_paid', 'subscription_approved', 'subscription_rejected', 'subscription_activated', 'subscription_renewed', 'subscription_suspended', 'subscription_reactivated', 'subscription_expired', 'plan_updated'],
   support: ['support_requested'],
 }
 
@@ -536,6 +689,12 @@ const ACTIVITY_ICONS = {
   course_payment_rejected: AlertTriangle,
   subscription_manual: CreditCard,
   subscription_paid: Wallet,
+  subscription_approved: Wallet,
+  subscription_activated: Wallet,
+  subscription_renewed: CreditCard,
+  subscription_suspended: AlertTriangle,
+  subscription_reactivated: Wallet,
+  subscription_expired: Clock,
   plan_updated: SettingsIcon,
   support_requested: LifeBuoy,
   comment_created: MessageSquare,

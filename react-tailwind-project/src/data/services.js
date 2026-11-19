@@ -2,6 +2,7 @@ import { nowIso, uid } from '../lib/utils.js'
 import { getState, resetStore, updateState } from './store.js'
 import {
   getActivePaymentMethods,
+  getCoursePaymentOptions,
   getCourse,
   getCourseEnrollments,
   getCourseLessons,
@@ -10,18 +11,24 @@ import {
   getLearnerEnrollments,
   getLesson,
   getLessonLockState,
+  canUsePlanFeature,
   getPlan,
+  getPlanAccess,
   getPlanUsage,
   getQuiz,
   getSchool,
   getSchoolBySlug,
+  getSchoolStorageMb,
   getSubscription,
+  getSubscriptionPaymentOptions,
   getTrainerProfile,
   getTrainerSubscription,
   hasActiveSubscription,
   isLessonCompleted,
   isSubscriptionActive,
 } from './selectors.js'
+import { SUBSCRIPTION_MANUAL_METHODS } from './paymentMethods.js'
+import { PLAN_CODES } from './plans.js'
 
 function pushActivity(draft, entry) {
   draft.activity.unshift({
@@ -31,13 +38,83 @@ function pushActivity(draft, entry) {
   })
 }
 
+function validatePaidPlan(plan, options = {}) {
+  if (!plan) return { ok: false, error: 'plan-not-found' }
+  if (plan.code !== PLAN_CODES.STARTER && plan.code !== PLAN_CODES.BUSINESS) return { ok: false, error: 'plan-not-allowed' }
+  if (!plan.enabled && !options.allowDisabled) return { ok: false, error: 'plan-disabled' }
+  if (plan.period !== 'month') return { ok: false, error: 'plan-period-invalid' }
+  if (!(Number(plan.priceDA) > 0)) return { ok: false, error: 'plan-not-paid' }
+  return { ok: true }
+}
+
+function checkPlanLimit(state, schoolId, limit) {
+  const usage = getPlanUsage(state, schoolId)
+  if (!usage.active) return { ok: false, error: 'subscription-required' }
+  if (limit === 'course' && !usage.canCreateCourse) return { ok: false, error: 'course-limit' }
+  if (limit === 'publish' && !usage.canPublishCourse) return { ok: false, error: 'course-limit' }
+  if (limit === 'paid' && !usage.canPublishPaidCourse) return { ok: false, error: 'plan-paid' }
+  if (limit === 'learner' && !usage.canAddLearner) return { ok: false, error: 'learner-limit' }
+  if (limit === 'storage' && !usage.hasStorage) return { ok: false, error: 'storage-limit' }
+  return { ok: true, usage }
+}
+
+function checkPlanFeature(state, schoolId, feature) {
+  if (!canUsePlanFeature(state, schoolId, feature)) return { ok: false, error: 'feature-not-in-plan' }
+  return { ok: true }
+}
+
 function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase()
 }
 
-function findUserByEmail(draft, email) {
+function findUserByEmail(draft, email, options = {}) {
   const value = normalizeEmail(email)
-  return draft.users.find((user) => normalizeEmail(user.email) === value) || null
+  return draft.users.find((user) => {
+    if (normalizeEmail(user.email) !== value) return false
+    if (options.schoolId && user.schoolId !== options.schoolId) return false
+    if (options.roles && !options.roles.includes(user.role)) return false
+    return true
+  }) || null
+}
+
+function sessionLearner(state, learnerId) {
+  const user = state.users.find((item) => item.id === learnerId)
+  if (!user || user.role !== 'learner') return { error: 'not-allowed' }
+  if (state.session?.userId !== learnerId) return { error: 'unauthorized' }
+  if (user.status === 'suspended') return { error: 'suspended' }
+  const courseSchool = user.schoolId ? getSchool(state, user.schoolId) : null
+  if (!courseSchool) return { error: 'school-not-allowed' }
+  return { user, school: courseSchool }
+}
+
+function validateCourseForLearner(state, courseId, learnerId) {
+  const access = sessionLearner(state, learnerId)
+  if (access.error) return access
+  const course = getCourse(state, courseId)
+  if (!course) return { error: 'not-found' }
+  if (course.schoolId !== access.user.schoolId) return { error: 'school-not-allowed' }
+  if (course.status !== 'published') return { error: 'not-published' }
+  return { ...access, course }
+}
+
+function hasActiveEnrollment(state, courseId, learnerId) {
+  return state.enrollments.some((item) => item.courseId === courseId && item.learnerId === learnerId && item.status === 'active')
+}
+
+function hasBlockingPayment(state, courseId, learnerId) {
+  return state.coursePayments.some(
+    (item) => item.courseId === courseId
+      && item.learnerId === learnerId
+      && ['pending', 'validated'].includes(item.status),
+  )
+}
+
+function authorizeSchoolReviewer(state, payment, reviewerId) {
+  const reviewerIdToCheck = reviewerId || state.session?.userId
+  const reviewer = state.users.find((item) => item.id === reviewerIdToCheck)
+  if (!reviewer || reviewer.role !== 'trainer' || reviewer.schoolId !== payment.schoolId) return false
+  if (state.session?.userId !== reviewerIdToCheck) return false
+  return true
 }
 
 function findProfile(draft, userId) {
@@ -68,9 +145,12 @@ export function activateSubscription(draft, userId, planId, method, amount) {
   const profile = findProfile(draft, userId)
   if (!profile) return null
   const now = new Date()
-  let subscription = profile.subscriptionId
+  const existing = profile.subscriptionId
     ? draft.subscriptions.find((item) => item.id === profile.subscriptionId)
     : null
+  const billingStartMs = Math.max(now.getTime(), existing?.endsAt ? new Date(existing.endsAt).getTime() : 0)
+  const endsAt = new Date(billingStartMs + 30 * 86400000).toISOString()
+  let subscription = existing
   if (!subscription) {
     subscription = {
       id: uid('sub'),
@@ -78,7 +158,7 @@ export function activateSubscription(draft, userId, planId, method, amount) {
       planId,
       status: 'active',
       startedAt: now.toISOString(),
-      endsAt: null,
+      endsAt,
       amount,
       method,
       createdAt: now.toISOString(),
@@ -89,7 +169,7 @@ export function activateSubscription(draft, userId, planId, method, amount) {
     subscription.planId = planId
     subscription.status = 'active'
     subscription.startedAt = now.toISOString()
-    subscription.endsAt = new Date(now.getTime() + 30 * 86400000).toISOString()
+    subscription.endsAt = endsAt
     subscription.amount = amount
     subscription.method = method
     subscription.cancelledAt = null
@@ -127,11 +207,16 @@ export function setSubscriptionStatus(draft, userId, status, planId) {
   return subscription
 }
 
-export function login(email, password) {
+export function login(email, password, options = null) {
   const state = getState()
-  const user = findUserByEmail(state, email)
-  if (!user) return { ok: false, error: 'invalid-credentials' }
-  if (user.password !== password) return { ok: false, error: 'invalid-credentials' }
+  const allowedRoles = Array.isArray(options) ? options : options?.roles
+  const schoolId = !Array.isArray(options) ? options?.schoolId : null
+  const candidate = findUserByEmail(state, email, { schoolId })
+  if (!candidate) return { ok: false, error: schoolId ? 'school-not-allowed' : 'invalid-credentials' }
+  if (candidate.password !== password) return { ok: false, error: 'invalid-credentials' }
+  if (allowedRoles && !allowedRoles.includes(candidate.role)) return { ok: false, error: 'role-not-allowed' }
+  const user = candidate
+  if (schoolId && user.schoolId !== schoolId) return { ok: false, error: 'school-not-allowed', user }
   if (user.status === 'suspended') return { ok: false, error: 'suspended', user }
   updateState((draft) => {
     const target = draft.users.find((item) => item.id === user.id)
@@ -141,10 +226,15 @@ export function login(email, password) {
   return { ok: true, user }
 }
 
-export function demoLogin(userId) {
+export function demoLogin(userId, options = null) {
   const state = getState()
   const user = state.users.find((item) => item.id === userId)
   if (!user) return { ok: false, error: 'not-found' }
+  const allowedRoles = Array.isArray(options) ? options : options?.roles
+  const schoolId = !Array.isArray(options) ? options?.schoolId : null
+  if (schoolId && user.schoolId !== schoolId) return { ok: false, error: 'school-not-allowed' }
+  if (allowedRoles && !allowedRoles.includes(user.role)) return { ok: false, error: 'role-not-allowed' }
+  if (user.status === 'suspended') return { ok: false, error: 'suspended' }
   updateState((draft) => {
     const target = draft.users.find((item) => item.id === userId)
     target.lastActiveAt = nowIso()
@@ -166,29 +256,42 @@ export function updateUser(userId, patch) {
   })
 }
 
-export function registerLearner({ name, email, password, schoolId, language = 'fr' }) {
+export function registerLearner({ name, email, password, schoolId, schoolSlug, language = 'fr' }) {
   const state = getState()
-  if (findUserByEmail(state, email)) return { ok: false, error: 'email-taken' }
+  const school = schoolSlug
+    ? getSchoolBySlug(state, schoolSlug)
+    : state.schools.find((item) => item.id === schoolId)
+  if (!school) return { ok: false, error: 'school-not-found' }
+  const cleanName = String(name || '').trim()
+  const cleanEmail = normalizeEmail(email)
+  if (cleanName.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail) || String(password || '').length < 8) {
+    return { ok: false, error: 'invalid-input' }
+  }
+  if (findUserByEmail(state, cleanEmail, { schoolId: school.id, roles: ['learner'] })) {
+    return { ok: false, error: 'email-taken' }
+  }
   const user = {
     id: uid('usr'),
-    name: String(name).trim(),
-    email: normalizeEmail(email),
+    name: cleanName,
+    email: cleanEmail,
     password,
     role: 'learner',
-    schoolId: schoolId || null,
+    schoolId: school.id,
     language,
     status: 'active',
     createdAt: nowIso(),
     lastActiveAt: nowIso(),
   }
-  updateState((draft) => {
+    updateState((draft) => {
     draft.users.push(user)
     draft.session = { userId: user.id, since: nowIso() }
+    pushActivity(draft, { type: 'learner_registered', actorId: user.id, schoolId: school.id })
   })
   return { ok: true, user }
 }
 
-export function registerTrainer({ name, email, password, language = 'fr' }) {
+export function registerTrainer
+({ name, email, password, language = 'fr' }) {
   const state = getState()
   if (findUserByEmail(state, email)) return { ok: false, error: 'email-taken' }
   const userId = uid('usr')
@@ -370,27 +473,17 @@ export function savePlanSelection(userId, planId) {
   })
 }
 
-export function activateFreePlan(userId) {
-  const plan = getState().plans.find((item) => item.code === 'pro')
-  if (!plan) return { ok: false, error: 'not-found' }
-  updateState((draft) => {
-    activateSubscription(draft, userId, plan.id, 'online', plan.priceDA)
-    draft.onboardingDrafts[userId] = {
-      ...(draft.onboardingDrafts[userId] || {}),
-      selectedPlanId: plan.id,
-      subscriptionStatus: 'active',
-    }
-    pushActivity(draft, { type: 'subscription_paid', actorId: userId, schoolId: findProfile(draft, userId)?.schoolId })
-  })
-  return { ok: true, plan }
-}
-
-export function submitSubscriptionOnline({ userId, planId, provider, outcome }) {
+export function submitSubscriptionOnline({ userId, planId, provider = 'chargily', outcome }) {
   const state = getState()
   const plan = getPlan(state, planId)
-  if (!plan) return { ok: false, error: 'not-found' }
+  const planCheck = validatePaidPlan(plan)
+  if (!planCheck.ok) return planCheck
+  if (!getSubscriptionPaymentOptions(state).some((option) => option.group === 'online')) {
+    return { ok: false, error: 'online-disabled' }
+  }
   const status = outcome === 'success' ? 'validated' : outcome === 'cancelled' ? 'cancelled' : 'failed'
   const paymentId = uid('sp')
+  const gatewayProvider = provider === 'cib' || provider === 'edahabia' || provider === 'chargerly' ? 'chargily' : provider
   updateState((draft) => {
     draft.subscriptionPayments.unshift({
       id: paymentId,
@@ -398,7 +491,8 @@ export function submitSubscriptionOnline({ userId, planId, provider, outcome }) 
       planId,
       amount: plan.priceDA,
       method: 'online',
-      provider,
+      provider: gatewayProvider,
+      cardType: null,
       status,
       reference: `TIW-ONL-${Math.floor(10000 + Math.random() * 89999)}`,
       proofName: null,
@@ -426,10 +520,15 @@ export function submitSubscriptionOnline({ userId, planId, provider, outcome }) 
   return { ok: status === 'validated', status, paymentId }
 }
 
-export function submitSubscriptionManual({ userId, planId, reference, proofName, proofDataUrl }) {
+export function submitSubscriptionManual({ userId, planId, method = 'ccpRip', provider, reference, proofName, proofDataUrl }) {
   const state = getState()
   const plan = getPlan(state, planId)
-  if (!plan) return { ok: false, error: 'not-found' }
+  const planCheck = validatePaidPlan(plan)
+  if (!planCheck.ok) return planCheck
+  const selectedMethod = SUBSCRIPTION_MANUAL_METHODS.includes(method) ? method : provider || 'ccpRip'
+  if (!getSubscriptionPaymentOptions(state).some((option) => option.id === selectedMethod)) {
+    return { ok: false, error: 'manual-disabled' }
+  }
   const paymentId = uid('sp')
   updateState((draft) => {
     draft.subscriptionPayments.unshift({
@@ -438,7 +537,7 @@ export function submitSubscriptionManual({ userId, planId, reference, proofName,
       planId,
       amount: plan.priceDA,
       method: 'manual',
-      provider: 'ccp',
+      provider: selectedMethod,
       status: 'pending',
       reference,
       proofName: proofName || null,
@@ -528,12 +627,76 @@ export function cancelSubscription(userId) {
   return { ok: true }
 }
 
+export function renewSubscription(userId, months = 1, reviewerId = 'u-admin') {
+  updateState((draft) => {
+    const profile = findProfile(draft, userId)
+    const subscription = profile?.subscriptionId
+      ? draft.subscriptions.find((item) => item.id === profile.subscriptionId)
+      : null
+    if (!subscription) return
+    const now = Date.now()
+    const base = Math.max(now, subscription.endsAt ? new Date(subscription.endsAt).getTime() : now)
+    subscription.status = 'active'
+    subscription.endsAt = new Date(base + Number(months || 1) * 30 * 86400000).toISOString()
+    subscription.cancelledAt = null
+    profile.planId = subscription.planId
+    if (draft.onboardingDrafts[userId]) draft.onboardingDrafts[userId].subscriptionStatus = 'active'
+    pushActivity(draft, {
+      type: 'subscription_renewed',
+      actorId: reviewerId,
+      schoolId: profile.schoolId,
+      meta: { months: Number(months || 1), amount: subscription.amount },
+    })
+  })
+  return { ok: true }
+}
+
+export function suspendSubscription(userId, reviewerId = 'u-admin') {
+  updateState((draft) => {
+    const profile = findProfile(draft, userId)
+    const subscription = profile?.subscriptionId
+      ? draft.subscriptions.find((item) => item.id === profile.subscriptionId)
+      : null
+    if (!subscription) return
+    subscription.status = 'suspended'
+    pushActivity(draft, { type: 'subscription_suspended', actorId: reviewerId, schoolId: profile.schoolId })
+  })
+  return { ok: true }
+}
+
+export function reactivateSubscription(userId, reviewerId = 'u-admin') {
+  updateState((draft) => {
+    const profile = findProfile(draft, userId)
+    const subscription = profile?.subscriptionId
+      ? draft.subscriptions.find((item) => item.id === profile.subscriptionId)
+      : null
+    if (!subscription) return
+    subscription.status = 'active'
+    subscription.cancelledAt = null
+    profile.planId = subscription.planId
+    pushActivity(draft, { type: 'subscription_reactivated', actorId: reviewerId, schoolId: profile.schoolId })
+  })
+  return { ok: true }
+}
+
+export function expireSubscription(userId) {
+  updateState((draft) => {
+    const profile = findProfile(draft, userId)
+    const subscription = profile?.subscriptionId
+      ? draft.subscriptions.find((item) => item.id === profile.subscriptionId)
+      : null
+    if (!subscription) return
+    subscription.status = 'expired'
+    pushActivity(draft, { type: 'subscription_expired', actorId: 'system', schoolId: profile.schoolId })
+  })
+  return { ok: true }
+}
+
 export function createCourse({ schoolId, trainerId, data }) {
   const state = getState()
+  const planCheck = checkPlanLimit(state, schoolId, 'course')
+  if (!planCheck.ok) return planCheck
   if (!hasActiveSubscription(state, trainerId)) return { ok: false, error: 'subscription-required' }
-  const usage = getPlanUsage(state, schoolId)
-  if (!usage.hasStorage) return { ok: false, error: 'storage-limit' }
-  if (!usage.canCreateCourse) return { ok: false, error: 'course-limit' }
   const courseId = uid('crs')
   const course = {
     id: courseId,
@@ -580,6 +743,14 @@ export function createCourse({ schoolId, trainerId, data }) {
 }
 
 export function updateCourse(courseId, patch) {
+  const state = getState()
+  const course = getCourse(state, courseId)
+  if (!course) return { ok: false, error: 'not-found' }
+  const becomesPaid = patch.isFree === false && course.isFree
+  if (becomesPaid) {
+    const planCheck = checkPlanLimit(state, course.schoolId, course.status === 'published' ? 'paid' : 'paid')
+    if (!planCheck.ok) return planCheck
+  }
   updateState((draft) => {
     const course = draft.courses.find((item) => item.id === courseId)
     if (!course) return
@@ -594,9 +765,9 @@ export function duplicateCourse(courseId, trainerId) {
   const state = getState()
   const original = getCourse(state, courseId)
   if (!original) return { ok: false, error: 'not-found' }
+  const planCheck = checkPlanLimit(state, original.schoolId, 'course')
+  if (!planCheck.ok) return planCheck
   if (!hasActiveSubscription(state, trainerId)) return { ok: false, error: 'subscription-required' }
-  const usage = getPlanUsage(state, original.schoolId)
-  if (!usage.canCreateCourse) return { ok: false, error: 'course-limit' }
   const newCourseId = uid('crs')
   updateState((draft) => {
     const source = draft.courses.find((item) => item.id === courseId)
@@ -991,12 +1162,11 @@ export function updateBlock(blockId, data) {
   const lesson = getLesson(state, block.lessonId)
   const course = lesson ? getCourse(state, lesson.courseId) : null
   if (block.type === 'video' && course) {
-    const usage = getPlanUsage(state, course.schoolId)
-    const otherVideoMb = state.blocks
-      .filter((item) => item.id !== blockId && item.type === 'video')
-      .reduce((total, item) => total + (Number(item.data?.sizeMb) || 0), 0)
-    const nextTotal = otherVideoMb + (Number(data.sizeMb) || 0)
-    if (!usage.hasStorage && nextTotal / 1024 > usage.limits.storageGb) {
+    const planCheck = checkPlanLimit(state, course.schoolId, 'storage')
+    if (!planCheck.ok) return planCheck
+    const nextTotalMb = getSchoolStorageMb(state, course.schoolId, blockId) + (Number(data.sizeMb) || 0)
+    const limitGb = planCheck.usage.limits.storageGb
+    if (limitGb !== -1 && limitGb !== null && limitGb !== undefined && nextTotalMb / 1024 > limitGb) {
       return { ok: false, error: 'storage-limit' }
     }
   }
@@ -1188,9 +1358,11 @@ export function saveVideoPosition(learnerId, courseId, lessonId, position) {
 
 export function completeLesson(learnerId, courseId, lessonId) {
   const state = getState()
-  const course = getCourse(state, courseId)
+  const access = validateCourseForLearner(state, courseId, learnerId)
+  if (access.error) return { ok: false, error: access.error }
+  const course = access.course
   const lesson = getLesson(state, lessonId)
-  if (!course || !lesson) return { ok: false, error: 'not-found' }
+  if (!lesson) return { ok: false, error: 'not-found' }
   if (lesson.type === 'quiz') return { ok: false, error: 'quiz-required' }
   const enrollment = state.enrollments.find(
     (item) => item.courseId === courseId && item.learnerId === learnerId && item.status === 'active',
@@ -1213,17 +1385,19 @@ export function completeLesson(learnerId, courseId, lessonId) {
 
 export function enrollFree(courseId, learnerId) {
   const state = getState()
-  const course = getCourse(state, courseId)
-  if (!course) return { ok: false, error: 'not-found' }
+  const access = validateCourseForLearner(state, courseId, learnerId)
+  if (access.error) return { ok: false, error: access.error }
+  const course = access.course
   if (!course.isFree) return { ok: false, error: 'not-free' }
-  if (course.status !== 'published') return { ok: false, error: 'not-published' }
   const existing = state.enrollments.find(
     (item) => item.courseId === courseId && item.learnerId === learnerId,
   )
-  if (existing?.status === 'active') return { ok: false, error: 'already-enrolled' }
-  const usage = getPlanUsage(state, course.schoolId)
-  if (!usage.hasStorage) return { ok: false, error: 'storage-limit' }
-  if (!usage.canAddLearner) return { ok: false, error: 'learner-limit' }
+  if (hasActiveEnrollment(state, courseId, learnerId)) return { ok: false, error: 'already-enrolled' }
+  if (hasBlockingPayment(state, courseId, learnerId)) return { ok: false, error: 'already-pending' }
+  const storageCheck = checkPlanLimit(state, course.schoolId, 'storage')
+  if (!storageCheck.ok) return storageCheck
+  const learnerCheck = checkPlanLimit(state, course.schoolId, 'learner')
+  if (!learnerCheck.ok) return learnerCheck
   updateState((draft) => {
     let enrollment = draft.enrollments.find(
       (item) => item.courseId === courseId && item.learnerId === learnerId,
@@ -1251,14 +1425,23 @@ export function enrollFree(courseId, learnerId) {
   return { ok: true }
 }
 
-export function submitCourseOnlinePayment({ courseId, learnerId, provider, outcome }) {
+export function submitCourseOnlinePayment({ courseId, learnerId, provider = 'chargily', cardType = 'edahabia', outcome }) {
   const state = getState()
-  const course = getCourse(state, courseId)
-  if (!course) return { ok: false, error: 'not-found' }
+  const access = validateCourseForLearner(state, courseId, learnerId)
+  if (access.error) return { ok: false, error: access.error }
+  const course = access.course
   if (course.isFree) return { ok: false, error: 'not-free' }
-  if (course.status !== 'published') return { ok: false, error: 'not-published' }
-  const school = getSchool(state, course.schoolId)
-  if (!getActivePaymentMethods(school).includes('online')) return { ok: false, error: 'online-disabled' }
+  const onlineOptions = getCoursePaymentOptions(state, access.school).filter((option) => option.group === 'online')
+  if (!onlineOptions.length) return { ok: false, error: 'online-disabled' }
+  const selectedCard = onlineOptions.some((option) => option.id === cardType) ? cardType : onlineOptions[0].id
+  const gatewayProvider = provider === 'cib' || provider === 'edahabia' || provider === 'chargerly' ? 'chargily' : provider
+  if (hasActiveEnrollment(state, courseId, learnerId)) return { ok: false, error: 'already-enrolled' }
+  if (hasBlockingPayment(state, courseId, learnerId)) return { ok: false, error: 'already-pending' }
+  const storageCheck = checkPlanLimit(state, course.schoolId, 'storage')
+  if (!storageCheck.ok) return storageCheck
+  const learnerCheck = checkPlanLimit(state, course.schoolId, 'learner')
+  if (!learnerCheck.ok) return learnerCheck
+  const reference = `CHG-${Math.floor(10000 + Math.random() * 89999)}`
   if (outcome !== 'success') {
     updateState((draft) => {
       draft.coursePayments.unshift({
@@ -1269,9 +1452,10 @@ export function submitCourseOnlinePayment({ courseId, learnerId, provider, outco
         learnerId,
         amount: course.priceDA,
         method: 'online',
-        provider,
+        provider: gatewayProvider,
+        cardType: selectedCard === 'chargily' ? null : selectedCard,
         status: outcome === 'cancelled' ? 'cancelled' : 'failed',
-        reference: `CHG-${Math.floor(10000 + Math.random() * 89999)}`,
+        reference,
         proofName: null,
         proofDataUrl: null,
         submittedAt: nowIso(),
@@ -1282,8 +1466,6 @@ export function submitCourseOnlinePayment({ courseId, learnerId, provider, outco
     })
     return { ok: false, error: outcome === 'cancelled' ? 'cancelled' : 'failed' }
   }
-  const usage = getPlanUsage(state, course.schoolId)
-  if (!usage.canAddLearner) return { ok: false, error: 'learner-limit' }
   updateState((draft) => {
     let enrollment = draft.enrollments.find(
       (item) => item.courseId === courseId && item.learnerId === learnerId,
@@ -1313,9 +1495,10 @@ export function submitCourseOnlinePayment({ courseId, learnerId, provider, outco
       learnerId,
       amount: course.priceDA,
       method: 'online',
-      provider,
-      status: 'validated',
-      reference: `CHG-${Math.floor(10000 + Math.random() * 89999)}`,
+      provider: gatewayProvider,
+      cardType: selectedCard === 'chargily' ? null : selectedCard,
+        status: 'validated',
+        reference,
       proofName: null,
       proofDataUrl: null,
       submittedAt: nowIso(),
@@ -1337,27 +1520,27 @@ export function submitCourseOnlinePayment({ courseId, learnerId, provider, outco
       meta: { amount: course.priceDA, learnerId },
     })
   })
-  return { ok: true }
+  return { ok: true, payment: { reference } }
 }
 
-export function requestManualEnrollment({ courseId, learnerId, reference, proofName, proofDataUrl }) {
+export function requestManualEnrollment({ courseId, learnerId, reference, proofName, proofDataUrl, method = 'ccp', provider }) {
   const state = getState()
-  const course = getCourse(state, courseId)
-  if (!course) return { ok: false, error: 'not-found' }
+  const access = validateCourseForLearner(state, courseId, learnerId)
+  if (access.error) return { ok: false, error: access.error }
+  const course = access.course
   if (course.isFree) return { ok: false, error: 'not-free' }
-  if (course.status !== 'published') return { ok: false, error: 'not-published' }
-  const school = getSchool(state, course.schoolId)
-  if (!school?.paymentSettings?.manual?.enabled) return { ok: false, error: 'manual-disabled' }
-  const existing = state.enrollments.find(
-    (item) => item.courseId === courseId && item.learnerId === learnerId,
-  )
-  if (existing?.status === 'active') return { ok: false, error: 'already-enrolled' }
-  const pendingPayment = state.coursePayments.find(
-    (item) => item.courseId === courseId && item.learnerId === learnerId && item.status === 'pending',
-  )
-  if (pendingPayment) return { ok: false, error: 'already-pending' }
-  const usage = getPlanUsage(state, course.schoolId)
-  if (!usage.canAddLearner) return { ok: false, error: 'learner-limit' }
+  const selectedMethod = method || provider || 'ccp'
+  const manualOptions = getCoursePaymentOptions(state, access.school).filter((option) => option.group === 'manual')
+  if (!manualOptions.some((option) => option.id === selectedMethod)) return { ok: false, error: 'manual-disabled' }
+  if (!['cash', 'inPerson'].includes(selectedMethod) && !String(reference || '').trim()) {
+    return { ok: false, error: 'reference-required' }
+  }
+  if (hasActiveEnrollment(state, courseId, learnerId)) return { ok: false, error: 'already-enrolled' }
+  if (hasBlockingPayment(state, courseId, learnerId)) return { ok: false, error: 'already-pending' }
+  const storageCheck = checkPlanLimit(state, course.schoolId, 'storage')
+  if (!storageCheck.ok) return storageCheck
+  const learnerCheck = checkPlanLimit(state, course.schoolId, 'learner')
+  if (!learnerCheck.ok) return learnerCheck
   updateState((draft) => {
     let enrollment = draft.enrollments.find(
       (item) => item.courseId === courseId && item.learnerId === learnerId,
@@ -1387,7 +1570,7 @@ export function requestManualEnrollment({ courseId, learnerId, reference, proofN
       learnerId,
       amount: course.priceDA,
       method: 'manual',
-      provider: 'ccp',
+      provider: selectedMethod,
       status: 'pending',
       reference,
       proofName: proofName || null,
@@ -1412,6 +1595,8 @@ export function approveCoursePayment(paymentId, reviewerId) {
   const state = getState()
   const payment = getCoursePayment(state, paymentId)
   if (!payment) return { ok: false, error: 'not-found' }
+  if (payment.status !== 'pending') return { ok: false, error: 'invalid-status' }
+  if (!authorizeSchoolReviewer(state, payment, reviewerId)) return { ok: false, error: 'not-allowed' }
   const course = getCourse(state, payment.courseId)
   updateState((draft) => {
     const target = draft.coursePayments.find((item) => item.id === paymentId)
@@ -1449,6 +1634,8 @@ export function rejectCoursePayment(paymentId, reason, reviewerId) {
   const state = getState()
   const payment = getCoursePayment(state, paymentId)
   if (!payment) return { ok: false, error: 'not-found' }
+  if (payment.status !== 'pending') return { ok: false, error: 'invalid-status' }
+  if (!authorizeSchoolReviewer(state, payment, reviewerId)) return { ok: false, error: 'not-allowed' }
   updateState((draft) => {
     const target = draft.coursePayments.find((item) => item.id === paymentId)
     target.status = 'rejected'
@@ -1526,8 +1713,8 @@ export function manualEnroll({ schoolId, courseId, email }, trainerId) {
     (item) => item.courseId === courseId && item.learnerId === learner.id,
   )
   if (existing?.status === 'active') return { ok: false, error: 'already-enrolled' }
-  const usage = getPlanUsage(state, schoolId)
-  if (!usage.canAddLearner && existing?.status !== 'active') return { ok: false, error: 'learner-limit' }
+  const learnerCheck = checkPlanLimit(state, schoolId, 'learner')
+  if (!learnerCheck.ok && existing?.status !== 'active') return learnerCheck
   updateState((draft) => {
     let enrollment = draft.enrollments.find(
       (item) => item.courseId === courseId && item.learnerId === learner.id,
@@ -1720,6 +1907,13 @@ export function markAnnouncementRead(announcementId, userId) {
 }
 
 export function saveEvent(data, eventId = null) {
+  const state = getState()
+  const featureCheck = checkPlanFeature(state, data.schoolId, 'calendar')
+  if (!featureCheck.ok) return featureCheck
+  if (data.type === 'live') {
+    const liveCheck = checkPlanFeature(state, data.schoolId, 'liveSessions')
+    if (!liveCheck.ok) return liveCheck
+  }
   if (eventId) {
     updateState((draft) => {
       const event = draft.events.find((item) => item.id === eventId)
@@ -1790,11 +1984,22 @@ export function testChargerlyConnection(schoolId) {
 }
 
 export function updatePlan(planId, patch) {
+  const current = getState().plans.find((plan) => plan.id === planId)
+  if (!current) return { ok: false, error: 'not-found' }
+  const next = { ...current, ...patch }
+  const planCheck = validatePaidPlan(next, { allowDisabled: true })
+  if (!planCheck.ok) return planCheck
+  const limitKeys = ['publishedCourses', 'paidCourses', 'learners', 'storageGb', 'trainers']
+  const limits = { ...current.limits, ...(patch.limits || {}) }
+  if (limitKeys.some((key) => !Number.isFinite(Number(limits[key])) || Number(limits[key]) < -1)) {
+    return { ok: false, error: 'invalid-limits' }
+  }
   updateState((draft) => {
     const plan = draft.plans.find((item) => item.id === planId)
     if (plan) {
-      Object.assign(plan, patch)
-      if (patch.limits) plan.limits = { ...plan.limits, ...patch.limits }
+      plan.priceDA = Number(next.priceDA)
+      plan.enabled = Boolean(next.enabled)
+      if (patch.limits) plan.limits = { ...plan.limits, ...limits }
     }
     pushActivity(draft, { type: 'plan_updated', actorId: 'u-admin', schoolId: null, meta: { planId } })
   })
@@ -1802,6 +2007,10 @@ export function updatePlan(planId, patch) {
 }
 
 export function togglePlan(planId, enabled) {
+  const state = getState()
+  if (!enabled && state.plans.filter((plan) => plan.enabled).length === 1 && state.plans.find((plan) => plan.id === planId)?.enabled) {
+    return { ok: false, error: 'at-least-one-plan' }
+  }
   return updatePlan(planId, { enabled })
 }
 

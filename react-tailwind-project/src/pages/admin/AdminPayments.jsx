@@ -1,16 +1,12 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import {
-  ArrowDownToLine,
   Banknote,
   CheckCircle2,
   CreditCard,
   Download,
   Eye,
-  Landmark,
   Receipt,
   RotateCcw,
-  Search,
   TrendingUp,
   Wallet,
   XCircle,
@@ -18,18 +14,46 @@ import {
 import { useI18n } from '../../i18n/I18nContext.jsx'
 import { useToast } from '../../context/ToastContext.jsx'
 import { useTiwanzaStore } from '../../data/store.js'
-import { getCourse, getPlan, getSchool, getSubscriptionPayments } from '../../data/selectors.js'
+import { getCourse, getSchool, getSubscriptionPayments } from '../../data/selectors.js'
 import {
+  approveCoursePayment,
   approveSubscriptionPayment,
   refundCoursePayment,
+  rejectCoursePayment,
   rejectSubscriptionPayment,
 } from '../../data/services.js'
+import {
+  COURSE_MANUAL_METHODS,
+  COURSE_ONLINE_METHODS,
+  SUBSCRIPTION_MANUAL_METHODS,
+  displayPaymentMethod,
+  paymentMethodLabelKey,
+} from '../../data/paymentMethods.js'
 import { Badge, Button, Card, ConfirmDialog, EmptyState, Modal, PageHeader, SearchField, Select, StatCard, Table, Tabs, Textarea } from '../../components/ui.jsx'
+import { getPlanName } from '../../data/plans.js'
 import { StatusPill } from './AdminDashboard.jsx'
 import { downloadCsv } from '../../lib/utils.js'
 
+const ONLINE_METHOD_IDS = ['chargily', 'online', ...COURSE_ONLINE_METHODS]
+const METHOD_FILTERS = [...new Set([
+  'chargily',
+  'online',
+  'manual',
+  ...COURSE_ONLINE_METHODS,
+  ...SUBSCRIPTION_MANUAL_METHODS,
+  ...COURSE_MANUAL_METHODS,
+])]
+
+function paymentProviderLabel(payment, t) {
+  const display = displayPaymentMethod(payment)
+  const label = t(paymentMethodLabelKey(display))
+  if (payment?.method !== 'online' || !ONLINE_METHOD_IDS.includes(display)) return label
+  if (display === 'chargily' || display === 'online') return t('payments.chargily')
+  return `${t('payments.chargily')} · ${label}`
+}
+
 export function AdminPayments() {
-  const { t, language, money, number, date, dateTime } = useI18n()
+  const { t, money, date, dateTime } = useI18n()
   const { success, error: toastError } = useToast()
   const state = useTiwanzaStore()
   const [tab, setTab] = useState('all')
@@ -81,7 +105,7 @@ export function AdminPayments() {
     if (tab === 'subscriptions' && row.kind !== 'subscription') return false
     if (tab === 'courses' && row.kind !== 'course') return false
     if (status !== 'all' && row.status !== status) return false
-    if (method !== 'all' && row.method !== method) return false
+    if (method !== 'all' && displayPaymentMethod(row.payment) !== method) return false
     const value = query.toLowerCase().trim()
     if (!value) return true
     return (
@@ -112,32 +136,44 @@ export function AdminPayments() {
   ]
 
   function approve(row) {
+    if (!row?.payment) return
     setLoading(true)
     window.setTimeout(() => {
-      approveSubscriptionPayment(row.payment.id)
+      const result = row.kind === 'course'
+        ? approveCoursePayment(row.payment.id, 'u-admin')
+        : approveSubscriptionPayment(row.payment.id, 'u-admin')
       setLoading(false)
+      if (!result.ok) return toastError(t('errors.generic'))
       setDetail(null)
-      success(t('adminSubscriptions.approveSuccess'))
+      success(row.kind === 'course' ? t('adminPayments.approveSuccess') : t('adminSubscriptions.approveSuccess'))
     }, 400)
   }
 
   function reject() {
+    if (!rejectTarget?.payment) return
     if (!reason.trim()) return toastError(t('errors.required'))
     setLoading(true)
     window.setTimeout(() => {
-      rejectSubscriptionPayment(rejectTarget.payment.id, reason.trim())
+      const result = rejectTarget.kind === 'course'
+        ? rejectCoursePayment(rejectTarget.payment.id, reason.trim(), 'u-admin')
+        : rejectSubscriptionPayment(rejectTarget.payment.id, reason.trim(), 'u-admin')
       setLoading(false)
+      if (!result.ok) return toastError(t('errors.generic'))
       setRejectTarget(null)
       setReason('')
-      success(t('adminSubscriptions.rejectSuccess'))
+      success(rejectTarget.kind === 'course' ? t('adminPayments.rejectSuccess') : t('adminSubscriptions.rejectSuccess'))
     }, 400)
   }
 
   function refund() {
+    if (!refundTarget?.payment) return
     setLoading(true)
     window.setTimeout(() => {
-      refundCoursePayment(refundTarget.payment.id)
+      const result = refundTarget.kind === 'course'
+        ? refundCoursePayment(refundTarget.payment.id, 'u-admin')
+        : { ok: false }
       setLoading(false)
+      if (!result.ok) return toastError(t('errors.generic'))
       setRefundTarget(null)
       setDetail(null)
       success(t('adminPayments.refundSuccess'))
@@ -154,7 +190,7 @@ export function AdminPayments() {
           row.kind === 'course' ? t('adminPayments.typeCourse') : t('adminPayments.typeSubscription'),
           row.school?.name || '',
           row.learner?.name || '',
-          row.course?.title || row.plan?.nameFr || '',
+          row.course?.title || getPlanName(row.plan),
           row.amount,
           row.status,
         ]),
@@ -195,9 +231,9 @@ export function AdminPayments() {
             </Select>
             <Select value={method} onChange={(event) => setMethod(event.target.value)} className="w-auto min-w-36" aria-label={t('adminPayments.filterMethod')}>
               <option value="all">{t('adminPayments.allMethods')}</option>
-              <option value="online">{t('payments.online')}</option>
-              <option value="manual">{t('payments.manual')}</option>
-              <option value="free">{t('common.free')}</option>
+              {METHOD_FILTERS.map((item) => (
+                <option key={item} value={item}>{t(paymentMethodLabelKey(item))}</option>
+              ))}
             </Select>
             <Badge tone="neutral" className="self-center">{t('adminPayments.resultsCount', { count: rows.length })}</Badge>
           </div>
@@ -213,6 +249,7 @@ export function AdminPayments() {
                 <th className="hidden md:table-cell">{t('adminPayments.tableLearner')}</th>
                 <th className="hidden lg:table-cell">{t('adminPayments.tableCourse')}</th>
                 <th>{t('common.amount')}</th>
+                <th className="hidden lg:table-cell">{t('common.method')}</th>
                 <th className="hidden sm:table-cell">{t('common.status')}</th>
                 <th className="text-end">{t('common.actions')}</th>
               </tr>
@@ -224,11 +261,12 @@ export function AdminPayments() {
                   <td><Badge tone={row.kind === 'course' ? 'blue' : 'purple'}>{row.kind === 'course' ? t('adminPayments.typeCourse') : t('adminPayments.typeSubscription')}</Badge></td>
                   <td>
                     <p className="truncate text-xs font-medium text-ink">{row.school?.name || '—'}</p>
-                    <p className="truncate text-[10px] text-muted">{row.kind === 'course' ? row.trainer?.name : row.plan?.nameFr}</p>
+                    <p className="truncate text-[10px] text-muted">{row.kind === 'course' ? row.trainer?.name : getPlanName(row.plan) || '—'}</p>
                   </td>
                   <td className="hidden md:table-cell text-xs text-muted">{row.learner?.name || '—'}</td>
-                  <td className="hidden lg:table-cell max-w-[180px] truncate text-xs text-muted">{row.course?.title || row.plan?.nameFr || '—'}</td>
+                  <td className="hidden lg:table-cell max-w-[180px] truncate text-xs text-muted">{row.course?.title || getPlanName(row.plan) || '—'}</td>
                   <td className="whitespace-nowrap text-xs font-semibold text-ink">{money(row.amount)}</td>
+                  <td className="hidden lg:table-cell"><Badge tone="neutral">{paymentProviderLabel(row.payment, t)}</Badge></td>
                   <td className="hidden sm:table-cell"><StatusPill status={row.status} t={t} /></td>
                   <td>
                     <div className="flex justify-end">
@@ -254,7 +292,7 @@ export function AdminPayments() {
           detail ? (
             <>
               <Button variant="secondary" onClick={() => setDetail(null)}>{t('common.close')}</Button>
-              {detail.kind === 'subscription' && detail.status === 'pending' ? (
+              {detail.status === 'pending' ? (
                 <>
                   <Button variant="dangerSoft" icon={XCircle} onClick={() => { setRejectTarget(detail); setReason(''); setDetail(null) }}>{t('adminPayments.reject')}</Button>
                   <Button variant="success" icon={CheckCircle2} loading={loading} onClick={() => approve(detail)}>{t('adminPayments.approve')}</Button>
@@ -281,10 +319,10 @@ export function AdminPayments() {
               <Detail label={t('adminPayments.tableSchool')} value={detail.school?.name || '—'} />
               <Detail label={t('adminPayments.reference')} value={detail.payment.reference || '—'} />
               <Detail label={t('common.date')} value={dateTime(detail.date)} />
-              <Detail label={t('common.method')} value={detail.method === 'manual' ? t('payments.manual') : detail.method === 'free' ? t('common.free') : t('payments.online')} />
-              <Detail label={t('adminPayments.transactionId')} value={detail.payment.provider || detail.method} />
+              <Detail label={t('common.method')} value={paymentProviderLabel(detail.payment, t)} />
+              <Detail label={t('adminPayments.transactionId')} value={paymentProviderLabel(detail.payment, t)} />
               <Detail label={t('adminPayments.tableLearner')} value={detail.learner?.name || '—'} />
-              <Detail label={t('adminPayments.tableCourse')} value={detail.course?.title || detail.plan?.nameFr || '—'} />
+              <Detail label={t('adminPayments.tableCourse')} value={detail.course?.title || getPlanName(detail.plan) || '—'} />
               {detail.payment.rejectionReason ? <Detail label={t('adminSubscriptions.rejectReason')} value={detail.payment.rejectionReason} /> : null}
             </div>
             <div className="rounded-xl border border-line p-4">
@@ -299,7 +337,7 @@ export function AdminPayments() {
                   <Button variant="ghost" size="xs" icon={Download} onClick={() => success(t('common.simulated'))}>{t('common.download')}</Button>
                 </div>
               ) : (
-                <p className="mt-2 text-[11px] text-muted">{detail.method === 'online' ? t('payments.transactionSimulated') : t('common.none')}</p>
+                <p className="mt-2 text-[11px] text-muted">{ONLINE_METHOD_IDS.includes(displayPaymentMethod(detail.payment)) ? t('payments.transactionSimulated') : t('common.none')}</p>
               )}
             </div>
             {detail.kind === 'course' ? (
@@ -321,9 +359,11 @@ export function AdminPayments() {
       <Modal
         open={Boolean(rejectTarget)}
         onClose={() => !loading && setRejectTarget(null)}
-        title={t('adminSubscriptions.rejectTitle')}
-        description={t('adminSubscriptions.rejectDesc', { school: rejectTarget?.school?.name || '' })}
-        footer={<><Button variant="secondary" onClick={() => setRejectTarget(null)} disabled={loading}>{t('common.cancel')}</Button><Button variant="danger" onClick={reject} loading={loading}>{t('adminSubscriptions.reject')}</Button></>}
+        title={rejectTarget?.kind === 'course' ? t('adminPayments.rejectTitle') : t('adminSubscriptions.rejectTitle')}
+        description={rejectTarget?.kind === 'course'
+          ? t('adminPayments.rejectDesc', { course: rejectTarget?.course?.title || '', learner: rejectTarget?.learner?.name || '' })
+          : t('adminSubscriptions.rejectDesc', { school: rejectTarget?.school?.name || '' })}
+        footer={<><Button variant="secondary" onClick={() => setRejectTarget(null)} disabled={loading}>{t('common.cancel')}</Button><Button variant="danger" icon={XCircle} onClick={reject} loading={loading}>{rejectTarget?.kind === 'course' ? t('adminPayments.reject') : t('adminSubscriptions.reject')}</Button></>}
       >
         <Textarea value={reason} onChange={(event) => setReason(event.target.value)} placeholder={t('adminSubscriptions.rejectReasonPlaceholder')} rows={3} />
       </Modal>

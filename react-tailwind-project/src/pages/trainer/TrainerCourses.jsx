@@ -193,8 +193,8 @@ export default function TrainerCourses() {
             <SearchField value={query} onChange={setQuery} placeholder={t('trainerCourses.searchPlaceholder')} className="w-full sm:w-72" />
             <div className="flex items-center gap-2">
               <div className="flex rounded-lg border border-line p-0.5">
-                <button type="button" onClick={() => setView('grid')} className={cn('grid h-7 w-7 place-items-center rounded-md', view === 'grid' ? 'bg-brand text-white' : 'text-muted hover:bg-surface')} aria-label="Grid"><LayoutGrid size={14} /></button>
-                <button type="button" onClick={() => setView('list')} className={cn('grid h-7 w-7 place-items-center rounded-md', view === 'list' ? 'bg-brand text-white' : 'text-muted hover:bg-surface')} aria-label="List"><List size={14} /></button>
+                <button type="button" onClick={() => setView('grid')} className={cn('grid h-7 w-7 place-items-center rounded-md', view === 'grid' ? 'bg-brand text-white' : 'text-muted hover:bg-surface')} aria-label={t('common.viewGrid')}><LayoutGrid size={14} /></button>
+                <button type="button" onClick={() => setView('list')} className={cn('grid h-7 w-7 place-items-center rounded-md', view === 'list' ? 'bg-brand text-white' : 'text-muted hover:bg-surface')} aria-label={t('common.viewList')}><List size={14} /></button>
               </div>
               <Badge tone="neutral">{t('trainerCourses.resultsCount', { count: rows.length })}</Badge>
             </div>

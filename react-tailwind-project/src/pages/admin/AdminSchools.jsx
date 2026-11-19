@@ -38,6 +38,7 @@ import {
   getCoursePaymentForEnrollment,
 } from '../../data/selectors.js'
 import { updateSchool } from '../../data/services.js'
+import { PLAN_CODES, getCatalogPlan, getPlanDescription, getPlanName } from '../../data/plans.js'
 import { Avatar, Badge, Button, Card, CardHeader, ConfirmDialog, EmptyState, IconButton, Input, PageHeader, ProgressBar, SearchField, Select, StatCard, Table } from '../../components/ui.jsx'
 import { StatusPill, activityKey } from './AdminDashboard.jsx'
 import { cn } from '../../lib/utils.js'
@@ -49,6 +50,8 @@ export function AdminSchools() {
   const [planFilter, setPlanFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [target, setTarget] = useState(null)
+  const starterPlan = getCatalogPlan(PLAN_CODES.STARTER)
+  const businessPlan = getCatalogPlan(PLAN_CODES.BUSINESS)
 
   const rows = useMemo(
     () =>
@@ -95,7 +98,7 @@ export function AdminSchools() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label={t('admin.statSchools')} value={number(state.schools.length)} icon={SchoolIcon} />
         <StatCard label={t('adminSchools.active')} value={number(rows.filter((row) => row.status === 'active').length)} icon={CheckCircle2} tone="success" />
-        <StatCard label={t('admin.statProSchools')} value={number(rows.filter((row) => row.plan?.code === 'pro').length)} icon={ShieldCheck} tone="purple" />
+        <StatCard label={getPlanName(businessPlan, language)} value={number(rows.filter((row) => row.plan?.code === PLAN_CODES.BUSINESS || row.plan?.recommended).length)} icon={ShieldCheck} tone="purple" />
         <StatCard label={t('admin.statPending')} value={number(rows.filter((row) => row.status === 'pending').length)} icon={CreditCard} tone="amber" />
       </div>
 
@@ -104,8 +107,8 @@ export function AdminSchools() {
           <SearchField value={query} onChange={setQuery} placeholder={t('adminSchools.searchPlaceholder')} className="w-full sm:w-72" />
           <Select value={planFilter} onChange={(event) => setPlanFilter(event.target.value)} className="w-auto min-w-36">
             <option value="all">{t('adminSchools.allPlans')}</option>
-            <option value="free">{t('common.free')}</option>
-            <option value="pro">{t('common.pro')}</option>
+            <option value={PLAN_CODES.STARTER}>{getPlanName(starterPlan, language)}</option>
+            <option value={PLAN_CODES.BUSINESS}>{getPlanName(businessPlan, language)}</option>
           </Select>
           <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="w-auto min-w-36">
             <option value="all">{t('adminSchools.allStatuses')}</option>
@@ -145,7 +148,7 @@ export function AdminSchools() {
                     <p className="truncate text-xs text-ink">{row.owner?.name || '—'}</p>
                     <p className="truncate text-[10px] text-muted">{row.owner?.email}</p>
                   </td>
-                  <td><Badge tone={row.plan?.code === 'pro' ? 'purple' : 'neutral'}>{row.plan ? (language === 'ar' ? row.plan.nameAr : row.plan.nameFr) : '—'}</Badge></td>
+                  <td><Badge tone={row.plan?.code === PLAN_CODES.BUSINESS || row.plan?.recommended ? 'purple' : 'neutral'}>{row.plan ? getPlanName(row.plan, language) : '—'}</Badge></td>
                   <td className="hidden sm:table-cell">
                     <span className="text-xs font-medium text-ink">{number(row.usage.learners)}</span>
                     <span className="text-[10px] text-muted"> / {row.usage.limits.learners < 0 ? '∞' : row.usage.limits.learners}</span>
@@ -316,8 +319,9 @@ export function AdminSchoolDetail() {
               <div className="rounded-xl border border-line p-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-semibold text-ink">{t('adminSchoolDetail.planInfo')}</h3>
-                  <Badge tone={plan?.code === 'pro' ? 'purple' : 'neutral'}>{plan ? (language === 'ar' ? plan.nameAr : plan.nameFr) : '—'}</Badge>
+                  <Badge tone={plan?.code === PLAN_CODES.BUSINESS || plan?.recommended ? 'purple' : 'neutral'}>{plan ? getPlanName(plan, language) : '—'}</Badge>
                 </div>
+                {plan ? <p className="mt-2 text-[11px] leading-relaxed text-muted">{getPlanDescription(plan, language)}</p> : null}
                 <div className="mt-3 space-y-3">
                   <UsageRow label={t('subscription.usageCourses')} used={usage.published} limit={usage.limits.publishedCourses} />
                   <UsageRow label={t('subscription.usageLearners')} used={usage.learners} limit={usage.limits.learners} />

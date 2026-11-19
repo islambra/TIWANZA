@@ -1,13 +1,14 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { ArrowRight, GraduationCap, Languages, Menu, X } from 'lucide-react'
+import { ArrowRight, GraduationCap, Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { Button, IconButton } from './ui.jsx'
+import LanguageSwitcher from './LanguageSwitcher.jsx'
 import { cn } from '../lib/utils.js'
 
 export default function PublicLayout() {
-  const { t, language, toggleLanguage } = useI18n()
+  const { t } = useI18n()
   const { isAuthenticated, home } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
@@ -46,11 +47,7 @@ export default function PublicLayout() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <IconButton label={t('common.language')} onClick={toggleLanguage} size="sm" variant="outline">
-              <Languages size={15} />
-              <span className="sr-only">{language === 'fr' ? 'French' : language === 'ar' ? 'Arabic' : 'English'}</span>
-              <span className="text-xs font-bold uppercase hidden sm:inline">{language === 'fr' ? 'FR' : language === 'ar' ? 'AR' : 'EN'}</span>
-            </IconButton>
+            <LanguageSwitcher variant="outline" />
             {isAuthenticated ? (
               <Button size="sm" onClick={() => { window.location.href = home }} className="hidden sm:inline-flex">
                 {t('common.dashboard')}
@@ -59,10 +56,10 @@ export default function PublicLayout() {
             ) : (
               <>
                 <Link to="/login" className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface sm:block">
-                  {t('landing.login')}
+                  {t('landing.trainerLogin')}
                 </Link>
                 <Link to="/register" className="hidden sm:block">
-                  <Button size="sm">{t('landing.signup')}</Button>
+                  <Button size="sm">{t('landing.trainerSignup')}</Button>
                 </Link>
               </>
             )}
@@ -79,9 +76,11 @@ export default function PublicLayout() {
                   {link.label}
                 </a>
               ))}
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                <Link to="/login"><Button variant="secondary" fullWidth size="sm">{t('landing.login')}</Button></Link>
-                <Link to="/register"><Button fullWidth size="sm">{t('landing.signup')}</Button></Link>
+              <div className="mt-2 grid gap-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <Link to="/login"><Button variant="secondary" fullWidth size="sm">{t('landing.trainerLogin')}</Button></Link>
+                  <Link to="/register"><Button fullWidth size="sm">{t('landing.trainerSignup')}</Button></Link>
+                </div>
               </div>
             </div>
           </div>
@@ -108,7 +107,6 @@ export default function PublicLayout() {
             <FooterColumn title={t('landing.footerProduct')}>
               <a href="#features">{t('landing.footerFeatures')}</a>
               <a href="#plans">{t('landing.footerPricing')}</a>
-              <Link to="/login">{t('landing.footerDemo')}</Link>
             </FooterColumn>
             <FooterColumn title={t('landing.footerCompany')}>
               <a href="#testimonials">{t('landing.footerAboutLink')}</a>

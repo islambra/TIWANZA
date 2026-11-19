@@ -25,6 +25,7 @@ import { useAuth } from '../../context/AuthContext.jsx'
 import { useTiwanzaStore } from '../../data/store.js'
 import { getPlatformStats, getPlans } from '../../data/selectors.js'
 import { Badge, Button, Card } from '../../components/ui.jsx'
+import PlanComparison from '../../components/PlanComparison.jsx'
 
 export default function LandingPage() {
   const { t, language, money, number } = useI18n()
@@ -32,7 +33,6 @@ export default function LandingPage() {
   const state = useTiwanzaStore()
   const stats = getPlatformStats(state)
   const plans = getPlans(state).filter((plan) => plan.enabled)
-  const publicSchools = state.schools.slice(0, 3)
 
   const features = [
     { icon: Globe2, title: t('landing.featureSchoolTitle'), desc: t('landing.featureSchoolDesc'), tone: 'bg-emerald-50 text-emerald-700' },
@@ -85,7 +85,7 @@ export default function LandingPage() {
               {t('landing.heroSubtitle')}
             </p>
             <div className="mt-7 flex flex-wrap items-center gap-3">
-              <Link to={isAuthenticated ? home : '/register?role=trainer'}>
+              <Link to={isAuthenticated ? home : '/register'}>
                 <Button size="lg">
                   {t('landing.ctaPrimary')}
                   <ArrowRight size={17} className="rtl:rotate-180" />
@@ -248,101 +248,25 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2">
-        <div>
-          <Badge tone="brand">{t('landing.showcaseTitle')}</Badge>
-          <h2 className="brand-font mt-3 text-3xl font-bold tracking-tight text-ink sm:text-4xl">{t('landing.showcaseTitle')}</h2>
-          <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted">{t('landing.showcaseDesc')}</p>
-          <div className="mt-6 space-y-3">
-            {publicSchools.map((school, index) => (
-              <Link key={school.id} to={`/s/${school.slug}`} className="flex items-center gap-3 rounded-xl border border-line bg-white p-3 transition hover:border-brand/30 hover:shadow-md">
-                <span className={`grid h-10 w-10 place-items-center rounded-xl text-sm font-bold ${['bg-brand-soft text-brand', 'bg-blue-50 text-blue-700', 'bg-amber-50 text-amber-700'][index]}`}>
-                  {school.name.slice(0, 1)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-ink">{school.name}</p>
-                  <p className="truncate text-[11px] text-muted">{school.subdomain}</p>
-                </div>
-                <ArrowRight size={15} className="text-muted rtl:rotate-180" />
-              </Link>
-            ))}
-          </div>
-        </div>
-        <Card className="overflow-hidden p-0">
-          <div className="brand-gradient p-6 text-white sm:p-8">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-white/70">{t('publicSite.heroBadge')}</span>
-              <Languages size={18} className="text-white/70" />
-            </div>
-            <h3 className="brand-font mt-4 max-w-sm text-2xl font-bold leading-tight">
-              {state.schools[0]?.name || 'Académie Nour'}
-            </h3>
-            <p className="mt-2 max-w-sm text-xs leading-relaxed text-white/75">
-              {language === 'ar' ? state.schools[0]?.description : state.schools[0]?.description}
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {state.courses.filter((course) => course.status === 'published' && course.schoolId === state.schools[0]?.id).slice(0, 3).map((course) => (
-                <span key={course.id} className="rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-medium backdrop-blur">{course.title}</span>
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-3 divide-x divide-line rtl:divide-x-reverse">
-            {[
-              [state.courses.filter((c) => c.status === 'published' && c.schoolId === state.schools[0]?.id).length, t('common.courses')],
-              [state.enrollments.filter((e) => e.schoolId === state.schools[0]?.id).length, t('common.students')],
-              ['4.9', t('common.satisfaction')],
-            ].map(([value, label]) => (
-              <div key={label} className="p-4 text-center">
-                <p className="brand-font text-xl font-bold text-ink">{value}</p>
-                <p className="text-[10px] text-muted">{label}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </section>
-
       <section id="plans" className="border-y border-line bg-surface/70">
-        <div className="mx-auto w-full max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6">
+        <div className="mx-auto w-full max-w-7xl scroll-mt-24 px-4 py-12 sm:px-6">
           <div className="mx-auto max-w-2xl text-center">
             <Badge tone="brand">{t('landing.footerPricing')}</Badge>
             <h2 className="brand-font mt-3 text-3xl font-bold tracking-tight text-ink sm:text-4xl">{t('landing.plansTitle')}</h2>
             <p className="mt-3 text-sm text-muted">{t('landing.plansSubtitle')}</p>
           </div>
-          <div className="mx-auto mt-10 grid max-w-3xl gap-4 md:grid-cols-2">
-            {plans.map((plan) => {
-              const isPro = plan.code === 'pro'
-              const features = language === 'ar' ? plan.featuresAr : plan.featuresFr
-              return (
-                <Card key={plan.id} className={isPro ? 'relative border-brand/40 p-6 shadow-lg shadow-brand/10' : 'p-6'}>
-                  {isPro ? (
-                    <span className="absolute -top-3 start-6 rounded-full bg-brand px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-white">{t('subscription.recommended')}</span>
-                  ) : null}
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-ink">{language === 'ar' ? plan.nameAr : plan.nameFr}</h3>
-                    {isPro ? <Sparkles size={18} className="text-brand" /> : <ShieldCheck size={18} className="text-muted" />}
-                  </div>
-                  <p className="mt-1 text-xs leading-relaxed text-muted">{language === 'ar' ? plan.descAr : plan.descFr}</p>
-                  <div className="mt-4 flex items-end gap-1">
-                    <span className="brand-font text-3xl font-bold text-ink">{money(plan.priceDA)}</span>
-                    <span className="pb-1 text-xs text-muted">{plan.priceDA === 0 ? t('subscription.freeForever') : t('common.perMonth')}</span>
-                  </div>
-                  <ul className="mt-5 space-y-2.5">
-                    {features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2 text-xs text-muted">
-                        <Check size={14} className="mt-0.5 shrink-0 text-brand" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link to={`/register?role=trainer&plan=${plan.id}`} className="mt-6 block">
-                    <Button fullWidth variant={isPro ? 'primary' : 'secondary'}>
-                      {plan.priceDA === 0 ? t('common.getStarted') : t('payments.choosePlan')}
-                    </Button>
-                  </Link>
-                </Card>
-              )
-            })}
-          </div>
+          <PlanComparison
+            plans={plans}
+            className="mx-auto mt-8 max-w-4xl"
+            renderAction={(plan) => (
+              <Link to={`/register?plan=${plan.id}`} className="block">
+                <Button fullWidth variant={plan.recommended ? 'primary' : 'secondary'}>
+                  {t('payments.choosePlan')}
+                </Button>
+              </Link>
+            )}
+          />
+          <p className="mx-auto mt-3 max-w-2xl text-center text-xs text-muted">{t('subscription.paymentRequired')}</p>
         </div>
       </section>
 
@@ -399,7 +323,7 @@ export default function LandingPage() {
               <h2 className="brand-font text-3xl font-bold tracking-tight sm:text-4xl">{t('landing.ctaTitle')}</h2>
               <p className="mt-2 max-w-xl text-sm text-white/65">{t('landing.ctaSubtitle')}</p>
             </div>
-            <Link to="/register?role=trainer" className="shrink-0">
+            <Link to="/register" className="shrink-0">
               <Button size="lg" className="bg-white text-ink hover:bg-brand-soft">
                 {t('landing.ctaButton')}
                 <ArrowRight size={17} className="rtl:rotate-180" />

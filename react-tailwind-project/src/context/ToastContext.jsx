@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
 import { CheckCircle2, AlertTriangle, Info, X, XCircle } from 'lucide-react'
+import { useI18n } from '../i18n/I18nContext.jsx'
 import { cn } from '../lib/utils.js'
 
 const ToastContext = createContext(null)
@@ -19,6 +20,7 @@ const toneIcons = {
 }
 
 export function ToastProvider({ children }) {
+  const { t } = useI18n()
   const [toasts, setToasts] = useState([])
   const timers = useRef(new Map())
 
@@ -71,7 +73,7 @@ export function ToastProvider({ children }) {
                 'pointer-events-auto flex w-full animate-slide-up items-start gap-3 rounded-xl border bg-white p-3.5 shadow-lg shadow-black/5',
                 toneStyles[item.tone],
               )}
-              role="status"
+              role={item.tone === 'error' || item.tone === 'warning' ? 'alert' : 'status'}
             >
               <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/70">
                 <Icon size={16} />
@@ -84,7 +86,7 @@ export function ToastProvider({ children }) {
                 type="button"
                 onClick={() => dismiss(item.id)}
                 className="rounded-md p-1 text-muted transition hover:bg-black/5 hover:text-ink"
-                aria-label="Fermer"
+                aria-label={t('common.close')}
               >
                 <X size={14} />
               </button>

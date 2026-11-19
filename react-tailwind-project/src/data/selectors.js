@@ -1,4 +1,51 @@
 import { normalizeSearch, percent } from '../lib/utils.js'
+import {
+  COURSE_MANUAL_METHODS,
+  COURSE_ONLINE_METHODS,
+  SUBSCRIPTION_MANUAL_METHODS,
+  paymentMethodDescriptionKey,
+  paymentMethodLabelKey,
+} from './paymentMethods.js'
+import { hasPlanFeature } from './plans.js'
+
+export { hasPlanFeature }
+
+function platformMethodEnabled(state, method) {
+  return state?.platformSettings?.methods?.[method] !== false
+}
+
+function courseOnlineAvailable(state, school) {
+  if (school?.paymentSettings?.chargerly?.status !== 'connected') return false
+  if (!state) return true
+  return platformMethodEnabled(state, 'online') && platformMethodEnabled(state, 'chargily')
+}
+
+function manualMethodConfigured(manual, method) {
+  if (!manual) return false
+  if (method === 'ccp') return Boolean(manual.ccp || manual.accountNumber)
+  if (method === 'baridimob') return Boolean(manual.baridimob)
+  if (method === 'bankTransfer') return Boolean(manual.bank?.rib || manual.bank?.name)
+  if (method === 'cash') return Boolean(manual.cashInstructionsFr || manual.cashInstructionsAr)
+  if (method === 'inPerson') return Boolean(manual.inPersonInstructionsFr || manual.inPersonInstructionsAr)
+  if (method === 'ccpRip') return Boolean(manual.ccp || manual.rib)
+  return false
+}
+
+function courseManualAvailable(state, school) {
+  const manual = school?.paymentSettings?.manual
+  if (!manual?.enabled) return false
+  if (!state) return true
+  return platformMethodEnabled(state, 'manual')
+}
+
+function methodOption(id, group) {
+  return {
+    id,
+    group,
+    labelKey: paymentMethodLabelKey(id),
+    descriptionKey: paymentMethodDescriptionKey(id),
+  }
+}
 
 export function isUnlimited(value) {
   return value === -1 || value === null || value === undefined
@@ -52,6 +99,36 @@ export function isSubscriptionActive(subscription) {
 
 export function hasActiveSubscription(state, userId) {
   return isSubscriptionActive(getTrainerSubscription(state, userId))
+}
+
+export function getPlanAccess(state, schoolId) {
+  const school = getSchool(state, schoolId)
+  const profile = school ? getTrainerProfile(state, school.trainerId) : null
+  const subscription = profile ? getTrainerSubscription(state, profile.userId) : null
+  const active = isSubscriptionActive(subscription)
+  const plan = getPlan(state, subscription?.planId || profile?.planId)
+  const limits = plan?.limits || {
+    publishedCourses: 0,
+    paidCourses: 0,
+    learners: 0,
+    storageGb: 0,
+    trainers: 0,
+  }
+  return {
+    active,
+    subscription,
+    profile,
+    plan,
+    limits,
+    features: plan?.features || {},
+    canUseFeature(feature) {
+      return active && hasPlanFeature(plan, feature)
+    },
+  }
+}
+
+export function canUsePlanFeature(state, schoolId, feature) {
+  return getPlanAccess(state, schoolId).canUseFeature(feature)
 }
 
 export function getCourse(state, courseId) {
@@ -110,6 +187,22 @@ export function getBlocks(state, lessonId) {
     .filter((block) => block.lessonId === lessonId)
     .slice()
     .sort((a, b) => a.order - b.order)
+}
+
+export function getSchoolStorageMb(state, schoolId, excludeBlockId = null) {
+  return getSchoolCourses(state, schoolId).reduce((total, course) => {
+    return (
+      total +
+      getCourseLessons(state, course.id).reduce((sum, lesson) => {
+        return (
+          sum +
+          getBlocks(state, lesson.id)
+            .filter((block) => block.type === 'video' && block.id !== excludeBlockId)
+            .reduce((mb, block) => mb + (Number(block.data?.sizeMb) || 0), 0)
+        )
+      }, 0)
+    )
+  }, 0)
 }
 
 export function getQuiz(state, quizId) {
@@ -292,32 +385,22 @@ export function getSchoolAnnouncements(state, schoolId) {
 }
 
 export function getPlanUsage(state, schoolId) {
-  const school = getSchool(state, schoolId)
-  const trainer = school ? getTrainerProfile(state, school.trainerId) : null
-  const plan = trainer ? getPlan(state, trainer.planId) : null
+  const access = getPlanAccess(state, schoolId)
+  const trainer = access.profile
+  const plan = access.plan
   const courses = getSchoolCourses(state, schoolId)
   const published = courses.filter((course) => course.status === 'published')
   const paidPublished = published.filter((course) => !course.isFree)
   const enrollments = getSchoolEnrollments(state, schoolId).filter((enrollment) => enrollment.status === 'active')
   const learners = new Set(enrollments.map((enrollment) => enrollment.learnerId))
-  const videoMb = courses.reduce((total, course) => {
-    const lessons = getCourseLessons(state, course.id)
-    return (
-      total +
-      lessons.reduce(
-        (sum, lesson) =>
-          sum +
-          getBlocks(state, lesson.id)
-            .filter((block) => block.type === 'video')
-            .reduce((mb, block) => mb + (Number(block.data?.sizeMb) || 0), 0),
-        0,
-      )
-    )
-  }, 0)
-  const limits = plan?.limits || { publishedCourses: 0, paidCourses: 0, learners: 0, storageGb: 0 }
+  const videoMb = getSchoolStorageMb(state, schoolId)
+  const limits = access.limits
+  const hasRoom = (value, used) => isUnlimited(value) || used < value
   return {
     plan,
     trainer,
+    subscription: access.subscription,
+    active: access.active,
     limits,
     courses: courses.length,
     published: published.length,
@@ -325,11 +408,11 @@ export function getPlanUsage(state, schoolId) {
     learners: learners.size,
     storageUsedGb: Number((videoMb / 1024).toFixed(2)),
     storageUsedMb: Math.round(videoMb),
-    canCreateCourse: isUnlimited(limits.publishedCourses) || courses.length < limits.publishedCourses,
-    canPublishCourse: isUnlimited(limits.publishedCourses) || published.length < limits.publishedCourses,
-    canPublishPaidCourse: isUnlimited(limits.paidCourses) || paidPublished.length < limits.paidCourses,
-    canAddLearner: isUnlimited(limits.learners) || learners.size < limits.learners,
-    hasStorage: isUnlimited(limits.storageGb) || videoMb / 1024 < limits.storageGb,
+    canCreateCourse: access.active && hasRoom(limits.publishedCourses, courses.length),
+    canPublishCourse: access.active && hasRoom(limits.publishedCourses, published.length),
+    canPublishPaidCourse: access.active && hasRoom(limits.paidCourses, paidPublished.length),
+    canAddLearner: access.active && hasRoom(limits.learners, learners.size),
+    hasStorage: access.active && hasRoom(limits.storageGb, videoMb / 1024),
   }
 }
 
@@ -495,12 +578,47 @@ export function getAdminActivity(state, limit = 10) {
     .slice(0, limit)
 }
 
-export function getActivePaymentMethods(school) {
+export function getActivePaymentMethods(school, state = null) {
   if (!school) return []
   const methods = []
-  if (school.paymentSettings?.chargerly?.status === 'connected') methods.push('online')
-  if (school.paymentSettings?.manual?.enabled) methods.push('manual')
+  if (courseOnlineAvailable(state, school)) methods.push('online')
+  if (courseManualAvailable(state, school)) methods.push('manual')
   return methods
+}
+
+export function getCoursePaymentOptions(state, school) {
+  const options = []
+  if (courseOnlineAvailable(state, school)) {
+    const cardTypes = COURSE_ONLINE_METHODS.filter(
+      (method) => platformMethodEnabled(state, method) && school.paymentSettings?.chargerly?.[method] !== false,
+    )
+    if (cardTypes.length) cardTypes.forEach((method) => options.push(methodOption(method, 'online')))
+    else options.push(methodOption('chargily', 'online'))
+  }
+  if (courseManualAvailable(state, school)) {
+    COURSE_MANUAL_METHODS.filter(
+      (method) =>
+        platformMethodEnabled(state, method)
+        && school.paymentSettings?.manual?.methods?.[method] !== false
+        && manualMethodConfigured(school.paymentSettings?.manual, method),
+    ).forEach((method) => options.push(methodOption(method, 'manual')))
+  }
+  return options
+}
+
+export function getSubscriptionPaymentOptions(state) {
+  const options = []
+  if (platformMethodEnabled(state, 'online') && platformMethodEnabled(state, 'chargily')) {
+    options.push(methodOption('chargily', 'online'))
+  }
+  if (platformMethodEnabled(state, 'manual')) {
+    SUBSCRIPTION_MANUAL_METHODS.filter(
+      (method) => platformMethodEnabled(state, method) && manualMethodConfigured(state?.platformSettings?.manualPayment, method),
+    ).forEach((method) => {
+      options.push(methodOption(method, 'manual'))
+    })
+  }
+  return options
 }
 
 export function getCourseByPayment(state, paymentId) {
@@ -651,10 +769,20 @@ export function getLastAccessedLesson(state, learnerId, course) {
   return getNextLesson(state, learnerId, course)
 }
 
-export function getSchoolPaymentMethodStatus(school) {
+export function getSchoolPaymentMethodStatus(school, state = null) {
+  const options = state ? getCoursePaymentOptions(state, school) : []
+  const has = (id) => options.some((option) => option.id === id)
   return {
-    online: school?.paymentSettings?.chargerly?.status === 'connected',
-    manual: Boolean(school?.paymentSettings?.manual?.enabled),
+    online: courseOnlineAvailable(state, school),
+    manual: courseManualAvailable(state, school),
+    chargily: has('chargily') || has('edahabia') || has('cib'),
+    edahabia: has('edahabia'),
+    cib: has('cib'),
+    ccp: has('ccp'),
+    baridimob: has('baridimob'),
+    bankTransfer: has('bankTransfer'),
+    cash: has('cash'),
+    inPerson: has('inPerson'),
   }
 }
 

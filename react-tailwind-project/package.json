@@ -9,7 +9,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "vite",
-    "lint": "node scripts/check-imports.mjs"
+    "lint": "node scripts/check-imports.mjs",
+    "check:i18n": "node scripts/check-i18n.mjs",
+    "test": "node --test tests/student-journey.test.mjs tests/subscription-plans.test.mjs"
   },
   "keywords": ["tiwanza", "lms", "prototype"],
   "author": "",

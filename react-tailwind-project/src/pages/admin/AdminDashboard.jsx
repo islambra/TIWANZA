@@ -24,12 +24,14 @@ import { useI18n } from '../../i18n/I18nContext.jsx'
 import { useTiwanzaStore } from '../../data/store.js'
 import {
   getAdminActivity,
+  getPlan,
   getPlanUsage,
   getPlatformStats,
   getSubscriptionPayments,
   getTrainerProfile,
   getTrainersOverview,
 } from '../../data/selectors.js'
+import { PLAN_CODES, getCatalogPlan, getPlanName } from '../../data/plans.js'
 import { Avatar, Badge, Button, Card, CardHeader, EmptyState, PageHeader, ProgressBar, StatCard } from '../../components/ui.jsx'
 import { cn } from '../../lib/utils.js'
 
@@ -71,10 +73,11 @@ export default function AdminDashboard() {
     .map((school) => ({ school, usage: getPlanUsage(state, school.id) }))
     .sort((a, b) => b.usage.learners - a.usage.learners)
     .slice(0, 4)
+  const starterPlan = getCatalogPlan(PLAN_CODES.STARTER)
+  const businessPlan = getCatalogPlan(PLAN_CODES.BUSINESS)
 
   function planName(profile) {
-    const plan = state.plans.find((item) => item.id === profile?.planId)
-    return plan ? (language === 'ar' ? plan.nameAr : plan.nameFr) : '—'
+    return getPlanName(getPlan(state, profile?.planId), language) || '—'
   }
 
   return (
@@ -133,12 +136,12 @@ export default function AdminDashboard() {
                 <p className="text-sm font-bold text-ink">{stats.activeSubscriptions}</p>
               </div>
               <div>
-                <p className="text-[10px] text-muted">{t('admin.statProSchools')}</p>
-                <p className="text-sm font-bold text-ink">{state.subscriptions.filter((item) => item.planId === 'plan-pro' && item.status === 'active').length}</p>
+                <p className="text-[10px] text-muted">{getPlanName(starterPlan, language)}</p>
+                <p className="text-sm font-bold text-ink">{state.subscriptions.filter((item) => item.planId === starterPlan?.id && item.status === 'active').length}</p>
               </div>
               <div>
-                <p className="text-[10px] text-muted">{t('admin.statFreeSchools')}</p>
-                <p className="text-sm font-bold text-ink">{state.subscriptions.filter((item) => item.status === 'active' && item.planId === 'plan-pro').length}</p>
+                <p className="text-[10px] text-muted">{getPlanName(businessPlan, language)}</p>
+                <p className="text-sm font-bold text-ink">{state.subscriptions.filter((item) => item.planId === businessPlan?.id && item.status === 'active').length}</p>
               </div>
             </div>
           </div>
@@ -198,6 +201,7 @@ export default function AdminDashboard() {
                     const owner = state.users.find((item) => item.id === school.trainerId)
                     const profile = getTrainerProfile(state, school.trainerId)
                     const subscription = state.subscriptions.find((item) => item.id === profile?.subscriptionId)
+                    const plan = getPlan(state, profile?.planId)
                     const usage = getPlanUsage(state, school.id)
                     const status = school.status === 'suspended' ? 'suspended' : subscription?.status || 'none'
                     return (
@@ -211,7 +215,7 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                         </td>
-                        <td><Badge tone={profile?.planId === 'plan-pro' ? 'purple' : 'neutral'}>{planName(profile)}</Badge></td>
+                        <td><Badge tone={plan?.code === PLAN_CODES.BUSINESS || plan?.recommended ? 'purple' : 'neutral'}>{planName(profile)}</Badge></td>
                         <td className="hidden sm:table-cell text-xs text-muted">{usage.learners}</td>
                         <td><StatusPill status={status} t={t} /></td>
                         <td><Link to={`/admin/schools/${school.id}`} className="text-[11px] font-semibold text-brand hover:underline">{t('common.view')}</Link></td>
@@ -283,7 +287,7 @@ export default function AdminDashboard() {
                   <p className="truncate text-[10px] text-muted">{row.school?.name || t('adminUsers.noSchool')}</p>
                 </div>
                 <div className="text-end">
-                  <Badge tone={row.plan?.code === 'pro' ? 'purple' : 'neutral'}>{row.plan ? (language === 'ar' ? row.plan.nameAr : row.plan.nameFr) : '—'}</Badge>
+                  <Badge tone={row.plan?.code === PLAN_CODES.BUSINESS || row.plan?.recommended ? 'purple' : 'neutral'}>{row.plan ? getPlanName(row.plan, language) : '—'}</Badge>
                   <p className="mt-1 text-[9px] text-muted">{row.usage?.learners || 0} {t('common.students')}</p>
                 </div>
               </div>
@@ -333,8 +337,12 @@ export function activityKey(type) {
     subscription_manual: 'subscriptionSubmitted',
     subscription_paid: 'subscriptionApproved',
     subscription_approved: 'subscriptionApproved',
+    subscription_activated: 'subscriptionApproved',
     subscription_rejected: 'paymentRejected',
-    subscription_free: 'planChanged',
+    subscription_renewed: 'subscriptionApproved',
+    subscription_suspended: 'subscriptionApproved',
+    subscription_reactivated: 'subscriptionApproved',
+    subscription_expired: 'subscriptionApproved',
     plan_updated: 'planChanged',
     announcement_published: 'announcementPublished',
     comment_created: 'commentAdded',

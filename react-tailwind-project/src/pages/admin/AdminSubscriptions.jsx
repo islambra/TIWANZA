@@ -7,12 +7,9 @@ import {
   Clock,
   CreditCard,
   Download,
-  Eye,
   FileText,
   Landmark,
   Receipt,
-  RefreshCw,
-  Search,
   ShieldCheck,
   Sparkles,
   Wallet,
@@ -20,7 +17,7 @@ import {
 } from 'lucide-react'
 import { useI18n } from '../../i18n/I18nContext.jsx'
 import { useToast } from '../../context/ToastContext.jsx'
-import { useTiwanzaStore } from '../../data/store.js'
+import { updateState, useTiwanzaStore } from '../../data/store.js'
 import {
   getPlan,
   getSchool,
@@ -28,14 +25,31 @@ import {
   getTrainerProfile,
 } from '../../data/selectors.js'
 import {
-  activateSubscription,
+  approveSubscriptionPayment,
   cancelSubscription,
+  reactivateSubscription,
   rejectSubscriptionPayment,
-  setSubscriptionStatus,
+  renewSubscription,
+  suspendSubscription,
 } from '../../data/services.js'
-import { Alert, Avatar, Badge, Button, Card, CardHeader, ConfirmDialog, EmptyState, Modal, PageHeader, SearchField, StatCard, Table, Tabs, Textarea } from '../../components/ui.jsx'
+import { Alert, Avatar, Badge, Button, Card, CardHeader, EmptyState, Input, Modal, PageHeader, SearchField, StatCard, Table, Tabs, Textarea } from '../../components/ui.jsx'
+import { COURSE_ONLINE_METHODS, displayPaymentMethod, paymentMethodLabelKey } from '../../data/paymentMethods.js'
+import { PLAN_CODES, getCatalogPlan, getPlanName } from '../../data/plans.js'
 import { StatusPill } from './AdminDashboard.jsx'
-import { cn } from '../../lib/utils.js'
+
+const ONLINE_METHOD_IDS = ['chargily', 'online', ...COURSE_ONLINE_METHODS]
+
+function paymentMethodIcon(method) {
+  if (ONLINE_METHOD_IDS.includes(method)) return CreditCard
+  if (['cash', 'inPerson'].includes(method)) return Banknote
+  if (['ccp', 'ccpRip', 'baridimob', 'bankTransfer', 'manual'].includes(method)) return Landmark
+  return Wallet
+}
+
+function PaymentMethodIcon({ method }) {
+  const Icon = paymentMethodIcon(method)
+  return <Icon size={12} />
+}
 
 export function AdminSubscriptions() {
   const { t, language, number, money, date, dateTime } = useI18n()
@@ -70,7 +84,9 @@ export function AdminSubscriptions() {
   const totalPending = pendingPayments.reduce((sum, item) => sum + item.payment.amount, 0)
   const activeCount = rows.filter((row) => row.subscription.status === 'active').length
   const expiredCount = rows.filter((row) => row.subscription.status === 'expired').length
-  const proCount = rows.filter((row) => row.plan?.code === 'pro' && row.subscription.status === 'active').length
+  const businessPlan = getCatalogPlan(PLAN_CODES.BUSINESS)
+  const businessCount = rows.filter((row) => row.plan?.code === PLAN_CODES.BUSINESS && row.subscription.status === 'active').length
+  const receiptMethod = receiptTarget?.latestPayment ? displayPaymentMethod(receiptTarget.latestPayment) : receiptTarget?.subscription?.method
 
   const filtered = rows.filter((row) => {
     const matchesTab =
@@ -99,8 +115,9 @@ export function AdminSubscriptions() {
     if (!approveTarget?.latestPayment) return
     setLoading(true)
     window.setTimeout(() => {
-      approveSubscriptionPayment(approveTarget.latestPayment.id)
+      const result = approveSubscriptionPayment(approveTarget.latestPayment.id, 'u-admin')
       setLoading(false)
+      if (!result.ok) return toastError(t('errors.generic'))
       setApproveTarget(null)
       success(t('adminSubscriptions.approveSuccess'))
     }, 450)
@@ -111,8 +128,9 @@ export function AdminSubscriptions() {
     if (!reason.trim()) return toastError(t('errors.required'))
     setLoading(true)
     window.setTimeout(() => {
-      rejectSubscriptionPayment(rejectTarget.latestPayment.id, reason.trim())
+      const result = rejectSubscriptionPayment(rejectTarget.latestPayment.id, reason.trim(), 'u-admin')
       setLoading(false)
+      if (!result.ok) return toastError(t('errors.generic'))
       setRejectTarget(null)
       setReason('')
       success(t('adminSubscriptions.rejectSuccess'))
@@ -125,12 +143,12 @@ export function AdminSubscriptions() {
   }
 
   function handleSuspend(row) {
-    setSubscriptionStatus(row.subscription.trainerId, 'suspended')
+    suspendSubscription(row.subscription.trainerId)
     success(t('adminSubscriptions.suspendSuccess'))
   }
 
   function handleReactivate(row) {
-    setSubscriptionStatus(row.subscription.trainerId, 'active')
+    reactivateSubscription(row.subscription.trainerId)
     success(t('adminSubscriptions.reactivateSuccess'))
   }
 
@@ -140,19 +158,17 @@ export function AdminSubscriptions() {
 
   function handleSaveConfigure() {
     if (!configureTarget) return
-    // Configure subscription price and duration
     const { priceDA, durationMonths } = configureTarget
-    setSubscriptionStatus(configureTarget.trainerId, 'active')
-    // Update subscription with new price and set endsAt based on duration
-    const now = new Date()
-    const subscription = state.subscriptions.find((item) => item.id === configureTarget.subscriptionId)
-    if (subscription) {
-      subscription.amount = priceDA || subscription.amount
-      if (durationMonths) {
-        subscription.endsAt = new Date(now.getTime() + durationMonths * 30 * 86400000).toISOString()
-      }
-      success(t('adminSubscriptions.configureSuccess'))
+    if (durationMonths) {
+      renewSubscription(configureTarget.subscription.trainerId, Number(durationMonths))
     }
+    if (priceDA) {
+      updateState((draft) => {
+        const subscription = draft.subscriptions.find((item) => item.id === configureTarget.subscription.id)
+        if (subscription) subscription.amount = Number(priceDA)
+      })
+    }
+    success(t('adminSubscriptions.configureSuccess'))
     setConfigureTarget(null)
   }
 
@@ -172,7 +188,7 @@ export function AdminSubscriptions() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label={t('adminSubscriptions.totalPendingAmount')} value={money(totalPending)} icon={Clock} tone="amber" hint={t('adminSubscriptions.pendingCount', { count: pendingPayments.length })} />
         <StatCard label={t('admin.statActiveSubscriptions')} value={number(activeCount)} icon={CheckCircle2} tone="success" />
-        <StatCard label={t('admin.statProSchools')} value={number(proCount)} icon={Sparkles} tone="purple" />
+        <StatCard label={getPlanName(businessPlan, language)} value={number(businessCount)} icon={Sparkles} tone="purple" />
         <StatCard label={t('adminSubscriptions.tabExpired')} value={number(expiredCount)} icon={Clock} tone="danger" />
       </div>
 
@@ -200,19 +216,21 @@ export function AdminSubscriptions() {
                 <tr key={row.subscription.id}>
                   <td>
                     <div className="flex items-center gap-2.5">
-                      <Avatar name={row.school?.name || row.trainer?.name} size="sm" tone={row.plan?.code === 'pro' ? 'purple' : 'brand'} />
+                      <Avatar name={row.school?.name || row.trainer?.name} size="sm" tone={row.plan?.code === PLAN_CODES.BUSINESS || row.plan?.recommended ? 'purple' : 'brand'} />
                       <div className="min-w-0">
                         <p className="truncate text-xs font-semibold text-ink">{row.school?.name || t('adminUsers.noSchool')}</p>
                         <p className="truncate text-[10px] text-muted">{row.trainer?.name}</p>
                       </div>
                     </div>
                   </td>
-                  <td><Badge tone={row.plan?.code === 'pro' ? 'purple' : 'neutral'}>{row.plan ? (language === 'ar' ? row.plan.nameAr : row.plan.nameFr) : '—'}</Badge></td>
+                  <td><Badge tone={row.plan?.code === PLAN_CODES.BUSINESS || row.plan?.recommended ? 'purple' : 'neutral'}>{row.plan ? getPlanName(row.plan, language) : '—'}</Badge></td>
                   <td className="text-xs font-semibold text-ink">{money(row.subscription.amount || row.plan?.priceDA || 0)}</td>
                   <td className="hidden md:table-cell">
                     <span className="inline-flex items-center gap-1.5 text-[11px] text-muted">
-                      {row.subscription.method === 'manual' ? <Landmark size={12} /> : <CreditCard size={12} />}
-                      {row.subscription.method === 'free' ? t('common.free') : row.subscription.method === 'manual' ? t('payments.manual') : t('payments.online')}
+                      <PaymentMethodIcon method={row.latestPayment ? displayPaymentMethod(row.latestPayment) : row.subscription.method} />
+                      {row.latestPayment
+                        ? t(paymentMethodLabelKey(displayPaymentMethod(row.latestPayment)))
+                        : t(paymentMethodLabelKey(row.subscription.method))}
                     </span>
                   </td>
                   <td className="hidden lg:table-cell">
@@ -225,10 +243,10 @@ export function AdminSubscriptions() {
                   </td>
                   <td className="text-end">
                     <div className="flex items-center justify-end gap-1">
-                      {row.latestPayment?.proofName || row.latestPayment ? (
+                      {row.latestPayment ? (
                         <Button variant="ghost" size="xs" icon={Receipt} onClick={() => setReceiptTarget(row)}>{t('adminSubscriptions.viewReceipt')}</Button>
                       ) : null}
-                      {row.subscription.status === 'pending' ? (
+                      {row.subscription.status === 'pending' && row.latestPayment ? (
                         <>
                           <Button variant="success" size="xs" icon={CheckCircle2} onClick={() => setApproveTarget(row)}>{t('adminSubscriptions.approve')}</Button>
                           <Button variant="dangerSoft" size="xs" icon={XCircle} onClick={() => { setRejectTarget(row); setReason('') }}>{t('adminSubscriptions.reject')}</Button>
@@ -263,14 +281,14 @@ export function AdminSubscriptions() {
             open={true}
             onClose={() => setConfigureTarget(null)}
             title={t('adminSubscriptions.configureTitle')}
-            description={t('adminSubscriptions.configureDesc', { school: configureTarget.school?.name || '', plan: configureTarget.plan ? (language === 'ar' ? configureTarget.plan.nameAr : configureTarget.plan.nameFr) : '' })}
+            description={t('adminSubscriptions.configureDesc', { school: configureTarget.school?.name || '', plan: getPlanName(configureTarget.plan, language) })}
             footer={<><Button variant="secondary" onClick={handleCancelConfigure}>{t('common.cancel')}</Button><Button variant="success" onClick={handleSaveConfigure}>{t('adminSubscriptions.configureSave')}</Button></>}
           >
             {configureTarget ? (
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3 rounded-xl bg-surface p-3 text-xs">
                   <Detail label={t('adminSubscriptions.tableSchool')} value={configureTarget.school?.name || '—'} />
-                  <Detail label={t('adminSubscriptions.tablePlan')} value={configureTarget.plan ? (language === 'ar' ? configureTarget.plan.nameAr : configureTarget.plan.nameFr) : '—'} />
+                  <Detail label={t('adminSubscriptions.tablePlan')} value={getPlanName(configureTarget.plan, language) || '—'} />
                   <Detail label={t('adminSubscriptions.tableAmount')} value={money(configureTarget.subscription?.amount || 0)} />
                   <Detail label={t('adminSubscriptions.tableReference')} value={configureTarget.latestPayment?.reference || '—'} />
                 </div>
@@ -291,14 +309,14 @@ export function AdminSubscriptions() {
         open={Boolean(approveTarget)}
         onClose={() => !loading && setApproveTarget(null)}
         title={t('adminSubscriptions.approveTitle')}
-        description={t('adminSubscriptions.approveDesc', { plan: approveTarget?.plan?.nameFr || '', school: approveTarget?.school?.name || '' })}
+        description={t('adminSubscriptions.approveDesc', { plan: getPlanName(approveTarget?.plan, language), school: approveTarget?.school?.name || '' })}
         footer={<><Button variant="secondary" onClick={() => setApproveTarget(null)} disabled={loading}>{t('common.cancel')}</Button><Button variant="success" onClick={handleApprove} loading={loading} icon={CheckCircle2}>{t('adminSubscriptions.approve')}</Button></>}
       >
         {approveTarget ? (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3 rounded-xl bg-surface p-3 text-xs">
               <Detail label={t('adminSubscriptions.tableSchool')} value={approveTarget.school?.name || '—'} />
-              <Detail label={t('adminSubscriptions.tablePlan')} value={approveTarget.plan ? (language === 'ar' ? approveTarget.plan.nameAr : approveTarget.plan.nameFr) : '—'} />
+              <Detail label={t('adminSubscriptions.tablePlan')} value={getPlanName(approveTarget.plan, language) || '—'} />
               <Detail label={t('adminSubscriptions.tableAmount')} value={money(approveTarget.latestPayment?.amount || 0)} />
               <Detail label={t('adminSubscriptions.tableReference')} value={approveTarget.latestPayment?.reference || '—'} />
             </div>
@@ -332,9 +350,9 @@ export function AdminSubscriptions() {
             <div className="grid gap-3 rounded-xl border border-line p-4 text-xs sm:grid-cols-2">
               <Detail label={t('adminSubscriptions.tableSchool')} value={receiptTarget.school?.name || '—'} />
               <Detail label={t('adminSubscriptions.tableOwner')} value={receiptTarget.trainer?.name || '—'} />
-              <Detail label={t('adminSubscriptions.tablePlan')} value={receiptTarget.plan ? (language === 'ar' ? receiptTarget.plan.nameAr : receiptTarget.plan.nameFr) : '—'} />
+              <Detail label={t('adminSubscriptions.tablePlan')} value={getPlanName(receiptTarget.plan, language) || '—'} />
               <Detail label={t('adminSubscriptions.tableAmount')} value={money(receiptTarget.latestPayment?.amount || 0)} />
-              <Detail label={t('adminSubscriptions.tableMethod')} value={receiptTarget.latestPayment?.method === 'manual' ? t('adminSubscriptions.manualPayment') : t('adminSubscriptions.onlinePayment')} />
+              <Detail label={t('adminSubscriptions.tableMethod')} value={t(paymentMethodLabelKey(receiptMethod))} />
               <Detail label={t('adminSubscriptions.tableReference')} value={receiptTarget.latestPayment?.reference || '—'} />
               <Detail label={t('adminSubscriptions.submittedOn')} value={dateTime(receiptTarget.latestPayment?.submittedAt)} />
               <Detail label={t('adminSubscriptions.reviewedOn')} value={receiptTarget.latestPayment?.reviewedAt ? dateTime(receiptTarget.latestPayment.reviewedAt) : '—'} />
@@ -353,7 +371,7 @@ export function AdminSubscriptions() {
                   </div>
                 </div>
               ) : (
-                <div className="mt-3 rounded-lg bg-surface/60 p-4 text-center text-xs text-muted">{receiptTarget.latestPayment?.method === 'online' ? t('payments.transactionSimulated') : t('adminSubscriptions.noReceipt')}</div>
+                <div className="mt-3 rounded-lg bg-surface/60 p-4 text-center text-xs text-muted">{ONLINE_METHOD_IDS.includes(receiptMethod) ? t('payments.transactionSimulated') : t('adminSubscriptions.noReceipt')}</div>
               )}
             </div>
           </div>

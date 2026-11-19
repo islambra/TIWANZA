@@ -1,4 +1,19 @@
 import { addDays, nowIso, uid } from '../lib/utils.js'
+import { defaultPlatformPaymentSettings, defaultSchoolPaymentSettings } from './paymentMethods.js'
+import { createPlanRecords, PLAN_CODES } from './plans.js'
+
+function schoolPaymentSettings(patch) {
+  const base = defaultSchoolPaymentSettings()
+  return {
+    chargerly: { ...base.chargerly, ...(patch.chargerly || {}) },
+    manual: {
+      ...base.manual,
+      ...(patch.manual || {}),
+      bank: { ...base.manual.bank, ...(patch.manual?.bank || {}) },
+      methods: { ...base.manual.methods, ...(patch.manual?.methods || {}) },
+    },
+  }
+}
 
 function demoImage(label, tone = '#0D7A6A') {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675"><rect width="1200" height="675" fill="#F8F8F6"/><rect x="40" y="40" width="1120" height="595" rx="24" fill="#ffffff" stroke="#E4E4E0"/><circle cx="950" cy="150" r="70" fill="${tone}" opacity="0.10"/><rect x="110" y="300" width="330" height="150" rx="16" fill="${tone}" opacity="0.08" stroke="${tone}" stroke-dasharray="8 8"/><rect x="520" y="250" width="440" height="200" rx="16" fill="#ffffff" stroke="${tone}" stroke-width="3"/><text x="540" y="330" font-family="Sora, Arial" font-size="30" font-weight="700" fill="#111111">Composant</text><text x="540" y="380" font-family="Sora, Arial" font-size="22" fill="#5C5C5C">props → rendu</text><text x="110" y="540" font-family="Sora, Arial" font-size="40" font-weight="700" fill="#111111">${label}</text><text x="110" y="590" font-family="Sora, Arial" font-size="22" fill="#5C5C5C">Schéma de démonstration — Tiwanza</text></svg>`
@@ -21,7 +36,7 @@ export function createSeedData() {
     { id: 'u-t3', name: 'Sofiane Merabet', email: 'sofiane@langue-plus.dz', password: 'demo1234', role: 'trainer', schoolId: 's-langue', language: 'ar', status: 'active', createdAt: at(-70), lastActiveAt: at(-3) },
     { id: 'u-t4', name: 'Rachid Brahimi', email: 'rachid@el-fajr.dz', password: 'demo1234', role: 'trainer', schoolId: 's-fajr', language: 'fr', status: 'active', createdAt: at(-6), lastActiveAt: at(-1) },
     { id: 'u-t5', name: 'Nadia Bensalem', email: 'nadia@example.dz', password: 'demo1234', role: 'trainer', schoolId: null, language: 'fr', status: 'active', createdAt: at(-1), lastActiveAt: at(0) },
-    { id: 'u-l1', name: 'Amina Cherif', email: 'amina@example.dz', password: 'demo1234', role: 'learner', schoolId: 's-nour', language: 'fr', status: 'active', createdAt: at(-30), lastActiveAt: at(0) },
+    { id: 'u-l1', name: 'Amina Cherif', email: 'amina@example.dz', phone: '+213 550 12 34 56', password: 'demo1234', role: 'learner', schoolId: 's-nour', language: 'fr', status: 'active', createdAt: at(-30), lastActiveAt: at(0) },
     { id: 'u-l2', name: 'Karim Boudiaf', email: 'karim@example.dz', password: 'demo1234', role: 'learner', schoolId: 's-nour', language: 'fr', status: 'active', createdAt: at(-25), lastActiveAt: at(-1) },
     { id: 'u-l3', name: 'Lina Saadi', email: 'lina@example.dz', password: 'demo1234', role: 'learner', schoolId: 's-code', language: 'fr', status: 'active', createdAt: at(-22), lastActiveAt: at(0) },
     { id: 'u-l4', name: 'Mehdi Khelifi', email: 'mehdi@example.dz', password: 'demo1234', role: 'learner', schoolId: 's-code', language: 'fr', status: 'active', createdAt: at(-19), lastActiveAt: at(-2) },
@@ -29,26 +44,10 @@ export function createSeedData() {
     { id: 'u-l6', name: 'Omar Ziani', email: 'omar@example.dz', password: 'demo1234', role: 'learner', schoolId: 's-nour', language: 'fr', status: 'active', createdAt: at(-14), lastActiveAt: at(-1) },
     { id: 'u-l7', name: 'Nour Bouzid', email: 'nour@example.dz', password: 'demo1234', role: 'learner', schoolId: 's-nour', language: 'ar', status: 'active', createdAt: at(-12), lastActiveAt: at(0) },
     { id: 'u-l8', name: 'Rania Guerroudj', email: 'rania@example.dz', password: 'demo1234', role: 'learner', schoolId: 's-code', language: 'fr', status: 'active', createdAt: at(-20), lastActiveAt: at(-6) },
+    { id: 'u-l9', name: 'Yasmine Saidi', email: 'yasmine@el-fajr.dz', password: 'demo1234', role: 'learner', schoolId: 's-fajr', language: 'fr', status: 'active', createdAt: at(-3), lastActiveAt: at(-1) },
   ]
 
-const plans = [
-    {
-      id: 'plan-pro',
-      code: 'pro',
-      nameFr: 'Abonnement Payant',
-      nameAr: 'اشتراك مدفوع',
-      descFr: 'Abonnement payant configurable pour votre école.',
-      descAr: 'اشتراك مدفوع قابل للتكوين لمدرستك.',
-      priceDA: 4900,
-      period: 'month',
-      samplePricing: true,
-      enabled: true,
-      order: 1,
-      limits: { publishedCourses: -1, paidCourses: -1, learners: -1, storageGb: 50 },
-      featuresFr: ['Cours publiés illimités', 'Cours payants illimités', 'Apprenants illimités', '50 Go de stockage vidéo natif', 'Site école personnalisé', 'Sessions live & calendrier', 'Support prioritaire'],
-      featuresAr: ['دورات منشورة غير محدودة', 'دورات مدفوعة غير محدودة', 'متعلقون غير محدودين', '50 غيغابايت لتخزين الفيديو', 'موقعschool مخصص', 'حصص مباشرة وتقويم', 'دعم ذو أولوية'],
-    },
-  ]
+  const plans = createPlanRecords()
 
   const schools = [
     {
@@ -65,8 +64,8 @@ const plans = [
       logo: null,
       brandAccent: '#0D7A6A',
       createdAt: at(-100),
-      paymentSettings: {
-        chargerly: { status: 'connected', mode: 'test', accountName: 'Académie Nour' },
+      paymentSettings: schoolPaymentSettings({
+        chargerly: { status: 'connected', mode: 'test', accountName: 'Académie Nour', edahabia: true, cib: true },
         manual: {
           enabled: true,
           ccp: '001 234 567 89 clé 45',
@@ -76,8 +75,12 @@ const plans = [
           instructionsFr: "Effectuez le virement puis indiquez la référence de votre paiement. Un justificatif (capture ou reçu) accélère la validation.",
           instructionsAr: 'قم بالتحويل ثم أشر إلى مرجع الدفع. إرفاق الإثبات (لقطة شاشة أو وصل) يسرّع التحقق.',
           delay: '24 h ouvrées',
+          cashInstructionsFr: 'Le paiement en espèces est reçu directement au secrétariat de l’école.',
+          cashInstructionsAr: 'يتم استلام الدفع نقداً مباشرة لدى أمانة المدرسة.',
+          inPersonInstructionsFr: 'Présentez-vous à l’accueil avec une pièce d’identité pour finaliser le paiement.',
+          inPersonInstructionsAr: 'احضر إلى الاستقبال مع وثيقة هوية لإتمام الدفع.',
         },
-      },
+      }),
     },
     {
       id: 's-code',
@@ -93,8 +96,8 @@ const plans = [
       logo: null,
       brandAccent: '#0F766E',
       createdAt: at(-80),
-      paymentSettings: {
-        chargerly: { status: 'disconnected', mode: 'test', accountName: '' },
+      paymentSettings: schoolPaymentSettings({
+        chargerly: { status: 'disconnected', mode: 'test', accountName: '', edahabia: true, cib: true },
         manual: {
           enabled: true,
           ccp: '002 345 678 90 clé 12',
@@ -104,8 +107,12 @@ const plans = [
           instructionsFr: "Le paiement manuel est validé par Imane sous 48 h. Indiquez la référence du paiement dans le formulaire.",
           instructionsAr: 'تتم الموافقة على الدفع اليدوي من طرف إيمان خلال 48 ساعة. أشر إلى مرجع الدفع في النموذج.',
           delay: '48 h ouvrées',
+          cashInstructionsFr: 'Remettez le montant à l’accueil de Code School DZ.',
+          cashInstructionsAr: 'سلّم المبلغ إلى استقبال Code School DZ.',
+          inPersonInstructionsFr: 'Un paiement en personne peut être organisé sur rendez-vous à Oran.',
+          inPersonInstructionsAr: 'يمكن ترتيب الدفع شخصياً بموعد في وهران.',
         },
-      },
+      }),
     },
     {
       id: 's-langue',
@@ -121,8 +128,8 @@ const plans = [
       logo: null,
       brandAccent: '#0D7A6A',
       createdAt: at(-70),
-      paymentSettings: {
-        chargerly: { status: 'connected', mode: 'test', accountName: 'Langue Plus' },
+      paymentSettings: schoolPaymentSettings({
+        chargerly: { status: 'connected', mode: 'test', accountName: 'Langue Plus', edahabia: true, cib: true },
         manual: {
           enabled: true,
           ccp: '003 456 789 01 clé 78',
@@ -132,8 +139,12 @@ const plans = [
           instructionsFr: 'Le paiement manuel est vérifié sous 24 h.',
           instructionsAr: 'يتم التحقق من الدفع اليدوي خلال 24 ساعة.',
           delay: '24 h ouvrées',
+          cashInstructionsFr: 'Le paiement en espèces est accepté au bureau de l’école.',
+          cashInstructionsAr: 'يُقبل الدفع نقداً في مكتب المدرسة.',
+          inPersonInstructionsFr: 'Venez au bureau de Constantine pour régler en personne.',
+          inPersonInstructionsAr: 'تعال إلى مكتب قسنطينة للدفع شخصياً.',
         },
-      },
+      }),
     },
     {
       id: 's-fajr',
@@ -149,8 +160,8 @@ const plans = [
       logo: null,
       brandAccent: '#0D7A6A',
       createdAt: at(-6),
-      paymentSettings: {
-        chargerly: { status: 'disconnected', mode: 'test', accountName: '' },
+      paymentSettings: schoolPaymentSettings({
+        chargerly: { status: 'disconnected', mode: 'test', accountName: '', edahabia: true, cib: true },
         manual: {
           enabled: true,
           ccp: '004 567 890 12 clé 34',
@@ -160,42 +171,47 @@ const plans = [
           instructionsFr: 'Renseignez la référence du paiement manuel.',
           instructionsAr: 'يرجى إدخال مرجع الدفع اليدوي.',
           delay: '48 h ouvrées',
+          cashInstructionsFr: 'Le règlement en espèces se fait à l’accueil de l’institut.',
+          cashInstructionsAr: 'يتم الدفع نقداً لدى استقبال المعهد.',
+          inPersonInstructionsFr: 'Présentez-vous à l’accueil pour un paiement en personne.',
+          inPersonInstructionsAr: 'احضر إلى الاستقبال للدفع شخصياً.',
         },
-      },
+      }),
     },
   ]
 
-const trainerProfiles = [
-    { id: 'tp-nour', userId: 'u-t1', schoolId: 's-nour', bio: 'Développeur full-stack et formateur depuis 8 ans. J’aime rendre le code accessible et concret.', headline: 'Développement web & produit', onboardingComplete: true, planId: 'plan-pro', subscriptionId: 'sub-nour', createdAt: at(-100) },
-    { id: 'tp-code', userId: 'u-t2', schoolId: 's-code', bio: 'Ingénieure logiciel et pédagogie avant tout. J’accompagne les débutants vers leur premier projet.', headline: 'Python, Git & bonnes pratiques', onboardingComplete: true, planId: 'plan-pro', subscriptionId: 'sub-code', createdAt: at(-80) },
-    { id: 'tp-langue', userId: 'u-t3', schoolId: 's-langue', bio: 'أستاذ لغات منذ 10 سنوات، أؤمن أن التعلم begins بالثقة والتطبيق اليومي.', headline: 'الفرنسية والإنجليزية للمبتدئين', onboardingComplete: true, planId: 'plan-pro', subscriptionId: 'sub-langue', createdAt: at(-70) },
-    { id: 'tp-fajr', userId: 'u-t4', schoolId: 's-fajr', bio: 'Expert-comptable et formateur en gestion d’entreprise.', headline: 'Gestion & comptabilité', onboardingComplete: true, planId: 'plan-pro', subscriptionId: 'sub-fajr', createdAt: at(-6) },
-    { id: 'tp-nadia', userId: 'u-t5', schoolId: null, bio: '', headline: '', onboardingComplete: false, planId: 'plan-pro', subscriptionId: null, createdAt: at(-1) },
+  const trainerProfiles = [
+    { id: 'tp-nour', userId: 'u-t1', schoolId: 's-nour', bio: 'Développeur full-stack et formateur depuis 8 ans. J’aime rendre le code accessible et concret.', headline: 'Développement web & produit', onboardingComplete: true, planId: 'plan-starter', subscriptionId: 'sub-nour', createdAt: at(-100) },
+    { id: 'tp-code', userId: 'u-t2', schoolId: 's-code', bio: 'Ingénieure logiciel et pédagogie avant tout. J’accompagne les débutants vers leur premier projet.', headline: 'Python, Git & bonnes pratiques', onboardingComplete: true, planId: 'plan-starter', subscriptionId: 'sub-code', createdAt: at(-80) },
+    { id: 'tp-langue', userId: 'u-t3', schoolId: 's-langue', bio: 'أستاذ لغات منذ 10 سنوات، أؤمن أن التعلم begins بالثقة والتطبيق اليومي.', headline: 'الفرنسية والإنجليزية للمبتدئين', onboardingComplete: true, planId: 'plan-business', subscriptionId: 'sub-langue', createdAt: at(-70) },
+    { id: 'tp-fajr', userId: 'u-t4', schoolId: 's-fajr', bio: 'Expert-comptable et formateur en gestion d’entreprise.', headline: 'Gestion & comptabilité', onboardingComplete: true, planId: 'plan-business', subscriptionId: 'sub-fajr', createdAt: at(-6) },
+    { id: 'tp-nadia', userId: 'u-t5', schoolId: null, bio: '', headline: '', onboardingComplete: false, planId: null, subscriptionId: null, createdAt: at(-1) },
   ]
 
   const subscriptions = [
-    { id: 'sub-nour', trainerId: 'u-t1', planId: 'plan-pro', status: 'active', startedAt: at(-20), endsAt: at(10), amount: 4900, method: 'online', createdAt: at(-20), cancelledAt: null },
-    { id: 'sub-code', trainerId: 'u-t2', planId: 'plan-pro', status: 'active', startedAt: at(-80), endsAt: at(280), amount: 4900, method: 'online', createdAt: at(-80), cancelledAt: null },
-    { id: 'sub-langue', trainerId: 'u-t3', planId: 'plan-pro', status: 'expired', startedAt: at(-50), endsAt: at(-5), amount: 4900, method: 'manual', createdAt: at(-50), cancelledAt: null },
-    { id: 'sub-fajr', trainerId: 'u-t4', planId: 'plan-pro', status: 'pending', startedAt: null, endsAt: null, amount: 4900, method: 'manual', createdAt: at(-1), cancelledAt: null },
+    { id: 'sub-nour', trainerId: 'u-t1', planId: 'plan-starter', status: 'active', startedAt: at(-20), endsAt: at(10), amount: 2900, method: 'online', createdAt: at(-20), cancelledAt: null },
+    { id: 'sub-code', trainerId: 'u-t2', planId: 'plan-starter', status: 'active', startedAt: at(-80), endsAt: at(280), amount: 2900, method: 'online', createdAt: at(-80), cancelledAt: null },
+    { id: 'sub-langue', trainerId: 'u-t3', planId: 'plan-business', status: 'active', startedAt: at(-50), endsAt: at(20), amount: 9900, method: 'manual', createdAt: at(-50), cancelledAt: null },
+    { id: 'sub-fajr', trainerId: 'u-t4', planId: 'plan-business', status: 'active', startedAt: at(-1), endsAt: at(29), amount: 9900, method: 'manual', createdAt: at(-1), cancelledAt: null },
   ]
 
   const subscriptionPayments = [
-    { id: 'sp-nour-1', trainerId: 'u-t1', planId: 'plan-pro', amount: 4900, method: 'online', provider: 'cib', status: 'validated', reference: 'TIW-ONL-83921', proofName: null, proofDataUrl: null, submittedAt: at(-20), reviewedAt: at(-20), rejectionReason: null },
-    { id: 'sp-nour-2', trainerId: 'u-t1', planId: 'plan-pro', amount: 4900, method: 'online', provider: 'edahabia', status: 'validated', reference: 'TIW-ONL-71203', proofName: null, proofDataUrl: null, submittedAt: at(-50), reviewedAt: at(-50), rejectionReason: null },
-    { id: 'sp-langue-1', trainerId: 'u-t3', planId: 'plan-pro', amount: 4900, method: 'manual', provider: 'ccp', status: 'validated', reference: 'CCP-2026-4412', proofName: 'recu-ccp-langue.pdf', proofDataUrl: null, submittedAt: at(-50), reviewedAt: at(-49), rejectionReason: null },
-    { id: 'sp-fajr-1', trainerId: 'u-t4', planId: 'plan-pro', amount: 4900, method: 'manual', provider: 'baridimob', status: 'pending', reference: 'BM-90912', proofName: 'preuve-baridimob.jpg', proofDataUrl: null, submittedAt: at(-1), reviewedAt: null, rejectionReason: null },
+    { id: 'sp-nour-1', trainerId: 'u-t1', planId: 'plan-starter', amount: 2900, method: 'online', provider: 'cib', status: 'validated', reference: 'TIW-ONL-83921', proofName: null, proofDataUrl: null, submittedAt: at(-20), reviewedAt: at(-20), rejectionReason: null },
+    { id: 'sp-nour-2', trainerId: 'u-t1', planId: 'plan-starter', amount: 2900, method: 'online', provider: 'edahabia', status: 'validated', reference: 'TIW-ONL-71203', proofName: null, proofDataUrl: null, submittedAt: at(-50), reviewedAt: at(-50), rejectionReason: null },
+    { id: 'sp-langue-1', trainerId: 'u-t3', planId: 'plan-business', amount: 9900, method: 'manual', provider: 'ccp', status: 'validated', reference: 'CCP-2026-4412', proofName: 'recu-ccp-langue.pdf', proofDataUrl: null, submittedAt: at(-50), reviewedAt: at(-49), rejectionReason: null },
+    { id: 'sp-fajr-1', trainerId: 'u-t4', planId: 'plan-business', amount: 9900, method: 'manual', provider: 'baridimob', status: 'validated', reference: 'BM-90912', proofName: 'preuve-baridimob.jpg', proofDataUrl: null, submittedAt: at(-1), reviewedAt: at(-1), rejectionReason: null },
   ]
 
   const courses = [
     { id: 'crs-nour-react', schoolId: 's-nour', trainerId: 'u-t1', title: 'Développement web moderne avec React', shortDescription: 'Construisez des interfaces rapides et maintenables avec React, des composants aux hooks.', description: "Cette formation vous emmène des bases de React jusqu'à la création d'une application complète. Vous apprendrez à penser en composants, à gérer l'état, à structurer un projet et à préparer un déploiement. Chaque module combine une démonstration, un exercice guidé et un quiz de validation.", category: 'Développement', language: 'fr', isFree: false, priceDA: 8900, cover: 'linear-gradient(135deg,#0D7A6A 0%,#0A5F53 100%)', coverLabel: 'REACT', coverImage: null, status: 'published', sequential: true, commentsEnabled: true, objectivesFr: ['Penser et découper une interface en composants', 'Maîtriser les props, l’état et les effets', 'Structurer une application React maintenable', 'Préparer un projet pour la mise en ligne'], objectivesAr: ['تفكيك الواجهة إلى مكونات', 'إتقان الخصائص والحالة والتأثيرات', 'هيكلة تطبيق React قابل للصيانة', 'تحضير المشروع للنشر'], createdAt: at(-60), updatedAt: at(-2), publishedAt: at(-40) },
     { id: 'crs-nour-ux', schoolId: 's-nour', trainerId: 'u-t1', title: 'Design UI/UX : les fondamentaux', shortDescription: 'Concevez des interfaces claires, utiles et cohérentes, de la recherche au prototype.', description: "Une formation concrète pour comprendre les principes du design d'interface et d'expérience. Vous travaillerez sur la hiérarchie visuelle, la typographie, les couleurs, les parcours utilisateurs et le prototypage rapide. Le fil rouge : améliorer une interface réelle pas à pas.", category: 'Design', language: 'fr', isFree: false, priceDA: 6500, cover: 'linear-gradient(135deg,#1F2937 0%,#0F766E 100%)', coverLabel: 'UI / UX', coverImage: null, status: 'published', sequential: false, commentsEnabled: true, objectivesFr: ['Appliquer des principes de hiérarchie visuelle', 'Créer un système de couleurs et de typographie', 'Construire un prototype testable', 'Présenter et défendre ses choix de design'], objectivesAr: ['تطبيق مبادئ التسلسل البصري', 'إنشاء نظام ألوان وخطوط', 'بناء نموذج أولي قابل للاختبار', 'عرض خيارات التصميم والدفاع عنها'], createdAt: at(-45), updatedAt: at(-1), publishedAt: at(-30) },
     { id: 'crs-nour-marketing', schoolId: 's-nour', trainerId: 'u-t1', title: 'Marketing digital pour indépendants', shortDescription: 'Une méthode simple pour trouver vos premiers clients sans brûler votre budget.', description: "Ce cours gratuit vous donne un cadre clair pour clarifier votre offre, choisir vos canaux et construire un plan d'acquisition réaliste quand on est indépendant en Algérie. Des exemples concrets, des modèles et un quiz final.", category: 'Business', language: 'fr', isFree: true, priceDA: 0, cover: 'linear-gradient(135deg,#0F766E 0%,#14532D 100%)', coverLabel: 'GROWTH', coverImage: null, status: 'published', sequential: false, commentsEnabled: true, objectivesFr: ['Définir une audience et une promesse claire', 'Choisir deux canaux prioritaires', 'Construire un plan d’action sur 30 jours'], objectivesAr: ['تحديد الجمهور والوعد الواضح', 'اختيار قناتين أساسيتين', 'بناء خطة عمل لـ 30 يوماً'], createdAt: at(-35), updatedAt: at(-5), publishedAt: at(-25) },
-    { id: 'crs-nour-ts', schoolId: 's-nour', trainerId: 'u-t1', title: 'Masterclass TypeScript', shortDescription: 'Un brouillon de masterclass sur les types avancés et l’architecture front-end.', description: 'Contenu en préparation. Cette masterclass couvrira les génériques, les types utilitaires et les patterns d’architecture pour de grandes applications.', category: 'Développement', language: 'fr', isFree: false, priceDA: 12000, cover: 'linear-gradient(135deg,#134E4A 0%,#0D7A6A 100%)', coverLabel: 'TS', coverImage: null, status: 'draft', sequential: true, commentsEnabled: true, objectivesFr: ['Comprendre les génériques', 'Utiliser les types utilitaires'], objectivesAr: ['فهم الأنواع العامة', 'استخدام الأنواع المساعدة'], createdAt: at(-8), updatedAt: at(-2), publishedAt: null },
+    { id: 'crs-nour-ts', schoolId: 's-nour', trainerId: 'u-t1', title: 'Masterclass TypeScript', shortDescription: 'Un parcours avancé sur les types et l’architecture front-end.', description: 'Cette masterclass couvre les génériques, les types utilitaires et les patterns d’architecture pour construire de grandes applications maintenables.', category: 'Développement', language: 'fr', isFree: false, priceDA: 12000, cover: 'linear-gradient(135deg,#134E4A 0%,#0D7A6A 100%)', coverLabel: 'TS', coverImage: null, status: 'published', sequential: true, commentsEnabled: true, objectivesFr: ['Comprendre les génériques', 'Utiliser les types utilitaires'], objectivesAr: ['فهم الأنواع العامة', 'استخدام الأنواع المساعدة'], createdAt: at(-8), updatedAt: at(-2), publishedAt: at(-7) },
     { id: 'crs-code-python', schoolId: 's-code', trainerId: 'u-t2', title: 'Python pour débutants', shortDescription: 'Vos premiers pas en programmation avec Python, sans prérequis.', description: "Un parcours gratuit et progressif pour découvrir la programmation avec Python. Vous écrivez vos premières lignes, manipulez des variables, des conditions et des boucles, puis validez vos acquis avec un quiz.", category: 'Développement', language: 'fr', isFree: true, priceDA: 0, cover: 'linear-gradient(135deg,#0D7A6A 0%,#115E59 100%)', coverLabel: 'PYTHON', coverImage: null, status: 'published', sequential: true, commentsEnabled: true, objectivesFr: ['Écrire et exécuter un script Python', 'Comprendre variables, types et conditions', 'Utiliser des boucles simples'], objectivesAr: ['كتابة وتنفيذ سكريبت بايثون', 'فهم المتغيرات والأنواع والشروط', 'استخدام الحلقات البسيطة'], createdAt: at(-50), updatedAt: at(-3), publishedAt: at(-35) },
     { id: 'crs-code-git', schoolId: 's-code', trainerId: 'u-t2', title: 'Git & GitHub en pratique', shortDescription: 'Versionnez votre code et collaborez sereinement sur vos projets.', description: "Apprenez Git par la pratique : commits, branches, fusion, résolution de conflits et collaboration sur GitHub. Cette formation payante inclut des exercices et un quiz de validation.", category: 'Développement', language: 'fr', isFree: false, priceDA: 3900, cover: 'linear-gradient(135deg,#292524 0%,#0D7A6A 100%)', coverLabel: 'GIT', coverImage: null, status: 'published', sequential: false, commentsEnabled: true, objectivesFr: ['Créer et gérer un dépôt Git', 'Travailler avec des branches', 'Collaborer sur GitHub'], objectivesAr: ['إنشاء وإدارة مستودع Git', 'العمل بالفروع', 'التعاون على GitHub'], createdAt: at(-30), updatedAt: at(-4), publishedAt: at(-20) },
     { id: 'crs-langue-fr', schoolId: 's-langue', trainerId: 'u-t3', title: 'اللغة الفرنسية للمبتدئين', shortDescription: 'دورة تفاعلية لتعلم أساسيات اللغة الفرنسية والتحدث بثقة في الحياة اليومية.', description: 'تبدأ هذه الدورة من الحروف والتحيات وتصل بك إلى محادثات بسيطة في الحياة اليومية. تتضمن فيديوهات قصيرة وتمارين وملفات قابلة للتحميل واختباراً نهائياً.', category: 'اللغات', language: 'ar', isFree: false, priceDA: 5500, cover: 'linear-gradient(135deg,#0D7A6A 0%,#1E3A5F 100%)', coverLabel: 'FR', coverImage: null, status: 'published', sequential: true, commentsEnabled: true, objectivesFr: ['Prononcer les sons essentiels du français', 'Se présenter et tenir une conversation simple'], objectivesAr: ['نطق الأصوات الأساسية في الفرنسية', 'التعريف بالنفس وإجراء محادثة بسيطة'], createdAt: at(-40), updatedAt: at(-6), publishedAt: at(-28) },
-    { id: 'crs-fajr-compta', schoolId: 's-fajr', trainerId: 'u-t4', title: 'Bases de la comptabilité', shortDescription: 'Comprendre le bilan, le compte de résultat et les écritures essentielles.', description: 'Formation en préparation pour les jeunes entrepreneurs.', category: 'Gestion', language: 'fr', isFree: false, priceDA: 7500, cover: 'linear-gradient(135deg,#134E4A 0%,#1F2937 100%)', coverLabel: 'COMPTA', coverImage: null, status: 'draft', sequential: false, commentsEnabled: true, objectivesFr: ['Lire un bilan', 'Comprendre les écritures courantes'], objectivesAr: ['قراءة الميزانية', 'فهم القيود المحاسبية'], createdAt: at(-5), updatedAt: at(-5), publishedAt: null },
+    { id: 'crs-fajr-compta', schoolId: 's-fajr', trainerId: 'u-t4', title: 'Bases de la comptabilité', shortDescription: 'Comprendre le bilan, le compte de résultat et les écritures essentielles.', description: 'Une introduction pratique à la comptabilité pour les jeunes entrepreneurs : lire un bilan, comprendre les écritures courantes et suivre l’activité de son entreprise.', category: 'Gestion', language: 'fr', isFree: false, priceDA: 7500, cover: 'linear-gradient(135deg,#134E4A 0%,#1F2937 100%)', coverLabel: 'COMPTA', coverImage: null, status: 'published', sequential: false, commentsEnabled: true, objectivesFr: ['Lire un bilan', 'Comprendre les écritures courantes'], objectivesAr: ['قراءة الميزانية', 'فهم القيود المحاسبية'], createdAt: at(-5), updatedAt: at(-3), publishedAt: at(-3) },
+    { id: 'crs-fajr-gestion', schoolId: 's-fajr', trainerId: 'u-t4', title: 'Gérer son projet au quotidien', shortDescription: 'Un cours gratuit pour organiser son temps, suivre ses dépenses et prendre de bonnes décisions.', description: 'Un parcours gratuit pour poser les bases de la gestion d’un projet : prioriser les tâches, suivre les dépenses et construire un tableau de bord simple.', category: 'Gestion', language: 'fr', isFree: true, priceDA: 0, cover: 'linear-gradient(135deg,#0D7A6A 0%,#0F766E 100%)', coverLabel: 'GESTION', coverImage: null, status: 'published', sequential: false, commentsEnabled: true, objectivesFr: ['Prioriser les tâches importantes', 'Suivre les dépenses du projet'], objectivesAr: ['ترتيب المهام المهمة', 'متابعة مصاريف المشروع'], createdAt: at(-4), updatedAt: at(-2), publishedAt: at(-2) },
   ]
 
   const courseMeta = {
@@ -257,6 +273,7 @@ const trainerProfiles = [
     { id: 'sec-lf-1', courseId: 'crs-langue-fr', title: 'الأساسيات', order: 1 },
     { id: 'sec-lf-2', courseId: 'crs-langue-fr', title: 'المحادثة', order: 2 },
     { id: 'sec-fc-1', courseId: 'crs-fajr-compta', title: 'Introduction', order: 1 },
+    { id: 'sec-fg-1', courseId: 'crs-fajr-gestion', title: 'Les essentiels', order: 1 },
   ]
 
   const sectionMeta = {
@@ -274,6 +291,7 @@ const trainerProfiles = [
     'sec-lf-1': { descriptionFr: 'الحروف والتحيات والمفردات الأساسية.', descriptionAr: 'الحروف والتحيات والمفردات الأساسية.' },
     'sec-lf-2': { descriptionFr: 'محادثات قصيرة وتدريب على النطق.', descriptionAr: 'محادثات قصيرة وتدريب على النطق.' },
     'sec-fc-1': { descriptionFr: 'Découvrir les notions comptables essentielles.', descriptionAr: 'التعرف على المفاهيم المحاسبية الأساسية.' },
+    'sec-fg-1': { descriptionFr: 'Organiser son projet et suivre ses dépenses.', descriptionAr: 'تنظيم المشروع ومتابعة المصاريف.' },
   }
   sections.forEach((section) => Object.assign(section, sectionMeta[section.id]))
 
@@ -304,6 +322,7 @@ const trainerProfiles = [
     { id: 'les-lf-2', courseId: 'crs-langue-fr', sectionId: 'sec-lf-1', title: 'الحروف والتحيات', type: 'content', order: 2, durationMin: 18, createdAt: at(-40) },
     { id: 'les-lf-3', courseId: 'crs-langue-fr', sectionId: 'sec-lf-2', title: 'اختبار — الأساسيات', type: 'quiz', order: 1, durationMin: 10, quizId: 'qz-langue', createdAt: at(-38) },
     { id: 'les-fc-1', courseId: 'crs-fajr-compta', sectionId: 'sec-fc-1', title: 'Les bases de la comptabilité', type: 'content', order: 1, durationMin: 12, createdAt: at(-5) },
+    { id: 'les-fg-1', courseId: 'crs-fajr-gestion', sectionId: 'sec-fg-1', title: 'Organiser son quotidien', type: 'content', order: 1, durationMin: 10, createdAt: at(-4) },
   ]
 
   const lessonMeta = {
@@ -532,6 +551,8 @@ git commit -m "Ajoute le quiz"</code></pre>` } },
     { id: 'enr-12', courseId: 'crs-code-git', schoolId: 's-code', learnerId: 'u-l8', status: 'suspended', source: 'online', enrolledAt: at(-14), updatedAt: at(-6) },
     { id: 'enr-13', courseId: 'crs-nour-ux', schoolId: 's-nour', learnerId: 'u-l1', status: 'active', source: 'manual', enrolledAt: at(-4), updatedAt: at(-3) },
     { id: 'enr-14', courseId: 'crs-nour-marketing', schoolId: 's-nour', learnerId: 'u-l3', status: 'active', source: 'free', enrolledAt: at(-3), updatedAt: at(-3) },
+    { id: 'enr-15', courseId: 'crs-fajr-compta', schoolId: 's-fajr', learnerId: 'u-l9', status: 'active', source: 'manual', enrolledAt: at(-2), updatedAt: at(-2) },
+    { id: 'enr-16', courseId: 'crs-nour-ts', schoolId: 's-nour', learnerId: 'u-l1', status: 'pending', source: 'manual', enrolledAt: at(-2), updatedAt: at(-2) },
   ]
 
   const coursePayments = [
@@ -544,6 +565,8 @@ git commit -m "Ajoute le quiz"</code></pre>` } },
     { id: 'cpy-7', enrollmentId: 'enr-9', courseId: 'crs-nour-ux', schoolId: 's-nour', learnerId: 'u-l6', amount: 6500, method: 'online', provider: 'cib', status: 'validated', reference: 'CHG-89120', proofName: null, proofDataUrl: null, submittedAt: at(-7), reviewedAt: at(-7), rejectionReason: null, refundedAt: null },
     { id: 'cpy-8', enrollmentId: 'enr-12', courseId: 'crs-code-git', schoolId: 's-code', learnerId: 'u-l8', amount: 3900, method: 'online', provider: 'edahabia', status: 'refunded', reference: 'CHG-88990', proofName: null, proofDataUrl: null, submittedAt: at(-14), reviewedAt: at(-14), rejectionReason: null, refundedAt: at(-6) },
     { id: 'cpy-9', enrollmentId: 'enr-13', courseId: 'crs-nour-ux', schoolId: 's-nour', learnerId: 'u-l1', amount: 6500, method: 'manual', provider: 'ccp', status: 'validated', reference: 'CPT-2026-5567', proofName: 'recu-ux-amina.pdf', proofDataUrl: null, submittedAt: at(-4), reviewedAt: at(-3), rejectionReason: null, refundedAt: null },
+    { id: 'cpy-10', enrollmentId: 'enr-15', courseId: 'crs-fajr-compta', schoolId: 's-fajr', learnerId: 'u-l9', amount: 7500, method: 'manual', provider: 'cash', status: 'validated', reference: '', proofName: null, proofDataUrl: null, submittedAt: at(-2), reviewedAt: at(-2), rejectionReason: null, refundedAt: null },
+    { id: 'cpy-11', enrollmentId: 'enr-16', courseId: 'crs-nour-ts', schoolId: 's-nour', learnerId: 'u-l1', amount: 12000, method: 'manual', provider: 'ccp', status: 'pending', reference: 'CPT-2026-7788', proofName: 'recu-typescript-amina.pdf', proofDataUrl: null, submittedAt: at(-2), reviewedAt: null, rejectionReason: null, refundedAt: null },
   ]
 
   const lessonProgress = [
@@ -572,6 +595,9 @@ git commit -m "Ajoute le quiz"</code></pre>` } },
     { id: 'att-2', quizId: 'qz-react-1', courseId: 'crs-nour-react', lessonId: 'les-nr-3', learnerId: 'u-l3', score: 5, total: 7, percentage: 71, passed: true, answers: { r1q1: 'r1q1a', r1q2: 'r1q2b', r1q3: ['r1q3a', 'r1q3b'], r1q4: 'r1q4a' }, startedAt: at(-9, 20, 0), completedAt: at(-9, 20, 15) },
     { id: 'att-3', quizId: 'qz-react-1', courseId: 'crs-nour-react', lessonId: 'les-nr-3', learnerId: 'u-l2', score: 3, total: 7, percentage: 43, passed: false, answers: { r1q1: 'r1q1b', r1q2: 'r1q2a', r1q3: ['r1q3a'], r1q4: 'r1q4a' }, startedAt: at(-13, 19, 0), completedAt: at(-13, 19, 18) },
     { id: 'att-4', quizId: 'qz-ux', courseId: 'crs-nour-ux', lessonId: 'les-nu-4', learnerId: 'u-l6', score: 5, total: 5, percentage: 100, passed: true, answers: { uxq1: 'uxq1a', uxq2: 'uxq2b', uxq3: ['uxq3a', 'uxq3b'] }, startedAt: at(-4, 17, 30), completedAt: at(-4, 17, 45) },
+    { id: 'att-5', quizId: 'qz-react-2', courseId: 'crs-nour-react', lessonId: 'les-nr-6', learnerId: 'u-l1', score: 4, total: 6, percentage: 67, passed: false, answers: { r2q1: 'r2q1a', r2q2: ['r2q2a'], r2q3: 'r2q3a' }, startedAt: at(-1, 18, 10), completedAt: at(-1, 18, 26) },
+    { id: 'att-6', quizId: 'qz-marketing', courseId: 'crs-nour-marketing', lessonId: 'les-nm-3', learnerId: 'u-l1', score: 5, total: 5, percentage: 100, passed: true, answers: { mkq1: 'mkq1a', mkq2: 'mkq2b', mkq3: ['mkq3a', 'mkq3b'] }, startedAt: at(-5, 20, 0), completedAt: at(-5, 20, 14) },
+    { id: 'att-7', quizId: 'qz-ux', courseId: 'crs-nour-ux', lessonId: 'les-nu-4', learnerId: 'u-l1', score: 3, total: 5, percentage: 60, passed: true, answers: { uxq1: 'uxq1a', uxq2: 'uxq2a', uxq3: ['uxq3a'] }, startedAt: at(-2, 11, 30), completedAt: at(-2, 11, 42) },
   ]
 
   const announcements = [
@@ -581,6 +607,9 @@ git commit -m "Ajoute le quiz"</code></pre>` } },
     { id: 'ann-4', schoolId: 's-nour', courseId: null, title: 'Prochainement : atelier portfolio', content: 'Un atelier gratuit pour construire votre portfolio sera annoncé prochainement.', audience: 'all', authorId: 'u-t1', status: 'draft', publishedAt: null, createdAt: at(-1), readBy: [] },
     { id: 'ann-5', schoolId: 's-code', courseId: 'crs-code-python', title: 'Mise à jour du cours Python', content: 'Deux exercices supplémentaires ont été ajoutés au module des boucles. Pensez à télécharger la nouvelle archive.', audience: 'course', authorId: 'u-t2', status: 'published', publishedAt: at(-3), createdAt: at(-3), readBy: ['u-l3'] },
     { id: 'ann-6', schoolId: 's-langue', courseId: null, title: 'مرحباً بكم في لانغ بلوس', content: 'يسعدنا انضمامكم إلى مدرستنا. ستجدون هنا الدورات والإعلانات والمواعيد المهمة.', audience: 'all', authorId: 'u-t3', status: 'published', publishedAt: at(-4), createdAt: at(-4), readBy: ['u-l5'] },
+    { id: 'ann-7', schoolId: 's-nour', courseId: 'crs-nour-react', title: 'Support PDF du module 2 disponible', content: 'Le récapitulatif des props, de l’état local et des effets est maintenant disponible dans la leçon « Créer son premier composant ».', audience: 'course', authorId: 'u-t1', status: 'published', publishedAt: at(-9), createdAt: at(-9), readBy: ['u-l1', 'u-l3'] },
+    { id: 'ann-8', schoolId: 's-nour', courseId: 'crs-nour-marketing', title: 'Modèle de plan d’action à télécharger', content: 'Un modèle simple est ajouté à la formation pour vous aider à remplir votre plan sur 30 jours avant l’échéance.', audience: 'course', authorId: 'u-t1', status: 'published', publishedAt: at(-3), createdAt: at(-3), readBy: [] },
+    { id: 'ann-9', schoolId: 's-nour', courseId: null, title: 'Nouvelle session live cette semaine', content: 'Une session supplémentaire est programmée pour revoir les hooks React. Elle apparaît déjà dans votre calendrier.', audience: 'all', authorId: 'u-t1', status: 'published', publishedAt: at(-1, 9, 30), createdAt: at(-1, 9, 30), readBy: [] },
   ]
 
   const comments = [
@@ -603,35 +632,41 @@ git commit -m "Ajoute le quiz"</code></pre>` } },
     { id: 'evt-6', schoolId: 's-langue', courseId: 'crs-langue-fr', title: 'جلسة مباشرة — نطق الحروف', description: 'جلسة تفاعلية لتدريب النطق.', startAt: at(3, 18, 30), durationMin: 45, type: 'live', provider: 'jitsi', joinUrl: 'https://meet.jit.si/tiwanza-langue-fr', status: 'scheduled', createdAt: at(-2) },
     { id: 'evt-7', schoolId: 's-nour', courseId: 'crs-nour-ux', title: 'Revue de portfolios', description: 'Session reportée à une date ultérieure.', startAt: at(4, 16, 0), durationMin: 60, type: 'event', provider: 'external', joinUrl: 'https://meet.google.com/tiw-demo-review', status: 'cancelled', createdAt: at(-3) },
     { id: 'evt-8', schoolId: 's-nour', courseId: null, title: 'Rencontre des apprenants Nour', description: 'Un moment informel pour échanger entre apprenants et formateur.', startAt: at(14, 17, 0), durationMin: 90, type: 'event', provider: 'external', joinUrl: 'https://meet.google.com/tiw-demo-rencontre', status: 'scheduled', createdAt: at(-1) },
+    { id: 'evt-9', schoolId: 's-nour', courseId: 'crs-nour-react', title: 'Live — React hooks en pratique', description: 'Reprenons ensemble les hooks et les effets avec des exemples concrets.', startAt: at(1, 19, 0), durationMin: 60, type: 'live', provider: 'jitsi', joinUrl: 'https://meet.jit.si/tiwanza-nour-hooks', status: 'scheduled', createdAt: at(-2) },
+    { id: 'evt-10', schoolId: 's-nour', courseId: 'crs-nour-marketing', title: 'Échéance — plan d’action 30 jours', description: 'Déposez votre plan d’acquisition sur 30 jours pour recevoir un retour personnalisé.', startAt: at(3, 21, 0), durationMin: 30, type: 'deadline', provider: 'none', joinUrl: '', status: 'scheduled', createdAt: at(-3) },
+    { id: 'evt-11', schoolId: 's-nour', courseId: 'crs-nour-ux', title: 'Atelier — critiquer une interface', description: 'Analyse collective d’une interface réelle et propositions d’amélioration.', startAt: at(5, 18, 30), durationMin: 75, type: 'workshop', provider: 'external', joinUrl: 'https://meet.google.com/tiw-demo-ux-critique', status: 'scheduled', createdAt: at(-2) },
+    { id: 'evt-12', schoolId: 's-nour', courseId: 'crs-nour-react', title: 'Révision — composants et props', description: 'Session de révision enregistrée pour préparer le quiz du module 2.', startAt: at(-3, 18, 0), durationMin: 45, type: 'live', provider: 'jitsi', joinUrl: 'https://meet.jit.si/tiwanza-nour-revision', status: 'past', createdAt: at(-10) },
   ]
 
   const supportRequests = [
     { id: 'sup-1', schoolId: 's-code', trainerId: 'u-t2', subject: 'Problème d’upload vidéo', message: 'Une vidéo reste bloquée à 80 % dans l’éditeur de leçon. Pouvez-vous vérifier ?', status: 'open', priority: 'high', createdAt: at(-2), updatedAt: at(-2) },
-    { id: 'sup-2', schoolId: 's-nour', trainerId: 'u-t1', subject: 'Question sur les limites du plan Pro', message: 'Le stockage vidéo est-il mutualisé entre tous mes cours ?', status: 'pending', priority: 'normal', createdAt: at(-1), updatedAt: at(-1) },
+    { id: 'sup-2', schoolId: 's-nour', trainerId: 'u-t1', subject: 'Question sur les limites du plan Démarrage', message: 'Le stockage vidéo est-il mutualisé entre tous mes cours ?', status: 'pending', priority: 'normal', createdAt: at(-1), updatedAt: at(-1) },
     { id: 'sup-3', schoolId: 's-langue', trainerId: 'u-t3', subject: 'Renouvellement de l’abonnement', message: 'Mon abonnement a expiré, comment soumettre un nouveau paiement manuel ?', status: 'resolved', priority: 'normal', createdAt: at(-7), updatedAt: at(-5) },
   ]
 
   const activity = [
     { id: 'act-1', type: 'trainer_registered', actorId: 'u-t4', schoolId: 's-fajr', createdAt: at(-6) },
-    { id: 'act-2', type: 'subscription_manual', actorId: 'u-t4', schoolId: 's-fajr', meta: { amount: 4900 }, createdAt: at(-1) },
+    { id: 'act-2', type: 'subscription_manual', actorId: 'u-t4', schoolId: 's-fajr', meta: { amount: 9900 }, createdAt: at(-1) },
     { id: 'act-3', type: 'course_published', actorId: 'u-t1', schoolId: 's-nour', courseId: 'crs-nour-react', createdAt: at(-40) },
     { id: 'act-4', type: 'enrollment_created', actorId: 'u-l1', schoolId: 's-nour', courseId: 'crs-nour-react', createdAt: at(-18) },
     { id: 'act-5', type: 'course_payment_validated', actorId: 'u-t1', schoolId: 's-nour', courseId: 'crs-nour-react', meta: { amount: 8900, learnerId: 'u-l1' }, createdAt: at(-15) },
     { id: 'act-6', type: 'quiz_passed', actorId: 'u-l1', schoolId: 's-nour', courseId: 'crs-nour-react', meta: { percentage: 100 }, createdAt: at(-14) },
     { id: 'act-7', type: 'course_published', actorId: 'u-t2', schoolId: 's-code', courseId: 'crs-code-python', createdAt: at(-35) },
-    { id: 'act-8', type: 'subscription_paid', actorId: 'u-t1', schoolId: 's-nour', meta: { amount: 4900 }, createdAt: at(-20) },
+    { id: 'act-8', type: 'subscription_paid', actorId: 'u-t1', schoolId: 's-nour', meta: { amount: 2900 }, createdAt: at(-20) },
     { id: 'act-9', type: 'comment_created', actorId: 'u-l2', schoolId: 's-nour', courseId: 'crs-nour-react', createdAt: at(-4) },
     { id: 'act-10', type: 'course_payment_pending', actorId: 'u-l2', schoolId: 's-nour', courseId: 'crs-nour-ux', meta: { amount: 6500 }, createdAt: at(-1) },
   ]
 
+  const paymentDefaults = defaultPlatformPaymentSettings()
   const platformSettings = {
     platformName: 'Tiwanza',
     supportEmail: 'support@tiwanza.dz',
     timezone: 'Africa/Algiers',
     currency: 'DA',
     demoMode: true,
-    methods: { online: true, manual: true, cib: true, edahabia: true },
+    ...paymentDefaults,
     manualPayment: {
+      ...paymentDefaults.manualPayment,
       ccp: '000 123 456 7 clé 89',
       baridimob: '00799999000123456789',
       bank: { name: 'BNA', agency: 'Agence Alger Centre', rib: '00123456789012345678' },
@@ -639,11 +674,13 @@ git commit -m "Ajoute le quiz"</code></pre>` } },
       instructionsFr: "Effectuez le virement sur le compte de Tiwanza, puis joignez une preuve de paiement (JPG, PNG ou PDF). Votre abonnement reste en attente jusqu'à validation par l'équipe Tiwanza sous 24 à 48 h.",
       instructionsAr: 'قم بالتحويل إلى حساب تيوانزا ثم أرفق إثبات الدفع (JPG أو PNG أو PDF). يبقى اشتراكك قيد الانتظار حتى تتحقق منه فرقة تيوانزا خلال 24 إلى 48 ساعة.',
       delay: '24-48 h',
+      cashInstructionsFr: 'Le paiement en espèces est reçu au siège de Tiwanza sur rendez-vous.',
+      cashInstructionsAr: 'يتم استلام الدفع نقداً في مقر تيوانزا بموعد مسبق.',
     },
   }
 
   return {
-    version: 2,
+    version: 7,
     generatedAt: nowIso(),
     users,
     schools,
@@ -674,20 +711,87 @@ git commit -m "Ajoute le quiz"</code></pre>` } },
 
 export function migrateState(raw) {
   const seed = createSeedData()
+  const catalog = createPlanRecords()
+  const starterId = `plan-${PLAN_CODES.STARTER}`
+  const businessId = `plan-${PLAN_CODES.BUSINESS}`
+  const legacyStarterTrainers = ['u-t1', 'u-t2']
+  const normalizePlanId = (planId, trainerId = null) => {
+    if (planId === starterId || planId === PLAN_CODES.STARTER) return starterId
+    if (planId === businessId || planId === PLAN_CODES.BUSINESS) return businessId
+    if (planId === 'plan-pro' || planId === 'pro') {
+      return legacyStarterTrainers.includes(trainerId) ? starterId : businessId
+    }
+    return null
+  }
+  const planAmount = (planId) => catalog.find((plan) => plan.id === planId)?.priceDA || 0
   const mergeRows = (current = [], defaults = []) => {
     const byId = new Map(defaults.map((row) => [row.id, row]))
     return current.map((row) => ({ ...(byId.get(row.id) || {}), ...row }))
   }
-  return {
+  const platformDefaults = defaultPlatformPaymentSettings()
+  const rawDrafts = raw.onboardingDrafts && typeof raw.onboardingDrafts === 'object' ? raw.onboardingDrafts : {}
+  const onboardingDrafts = Object.entries(rawDrafts).reduce((entries, [userId, draft]) => {
+    const selectedPlanId = normalizePlanId(draft?.selectedPlanId, userId)
+    entries[userId] = {
+      ...draft,
+      ...(selectedPlanId ? { selectedPlanId } : {}),
+    }
+    return entries
+  }, {})
+  const merged = {
     ...seed,
     ...raw,
-    version: 2,
+    version: 7,
+    plans: catalog,
+    trainerProfiles: (Array.isArray(raw.trainerProfiles) ? raw.trainerProfiles : seed.trainerProfiles).map((profile) => ({
+      ...profile,
+      planId: normalizePlanId(profile.planId, profile.userId),
+    })),
+    subscriptions: (Array.isArray(raw.subscriptions) ? raw.subscriptions : seed.subscriptions).map((subscription) => {
+      const planId = normalizePlanId(subscription.planId, subscription.trainerId)
+      return {
+        ...subscription,
+        planId,
+        amount: planAmount(planId) || subscription.amount,
+      }
+    }),
+    subscriptionPayments: (Array.isArray(raw.subscriptionPayments) ? raw.subscriptionPayments : seed.subscriptionPayments).map((payment) => {
+      const planId = normalizePlanId(payment.planId, payment.trainerId)
+      return {
+        ...payment,
+        planId,
+        amount: planAmount(planId) || payment.amount,
+      }
+    }),
+    onboardingDrafts,
+    activity: (Array.isArray(raw.activity) ? raw.activity : seed.activity).map((entry) => (
+      entry.type === 'subscription_free' ? { ...entry, type: 'subscription_activated' } : entry
+    )),
+    supportRequests: (Array.isArray(raw.supportRequests) ? raw.supportRequests : seed.supportRequests).map((request) => ({
+      ...request,
+      subject: String(request.subject || '').replace(/plan Pro/gi, 'plan Business'),
+    })),
     courses: mergeRows(raw.courses, seed.courses),
     sections: mergeRows(raw.sections, seed.sections),
     lessons: mergeRows(raw.lessons, seed.lessons),
     quizzes: mergeRows(raw.quizzes, seed.quizzes),
     reviews: Array.isArray(raw.reviews) ? mergeRows(raw.reviews, seed.reviews) : seed.reviews,
   }
+  merged.platformSettings = {
+    ...platformDefaults,
+    ...(raw.platformSettings || {}),
+    methods: { ...platformDefaults.methods, ...(raw.platformSettings?.methods || {}) },
+    manualPayment: {
+      ...platformDefaults.manualPayment,
+      ...(raw.platformSettings?.manualPayment || {}),
+      bank: { ...platformDefaults.manualPayment.bank, ...(raw.platformSettings?.manualPayment?.bank || {}) },
+    },
+  }
+  merged.schools = (Array.isArray(raw.schools) ? raw.schools : seed.schools).map((school) => ({
+    ...school,
+    paymentSettings: schoolPaymentSettings(school.paymentSettings || {}),
+  }))
+  return merged
 }
 
 export function createDemoUser() {

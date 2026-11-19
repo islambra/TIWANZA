@@ -28,7 +28,6 @@ import { useToast } from '../../context/ToastContext.jsx'
 import { useI18n } from '../../i18n/I18nContext.jsx'
 import { useTiwanzaStore } from '../../data/store.js'
 import {
-  activateFreePlan,
   checkSubdomainAvailability,
   completeOnboarding,
   createSchoolForTrainer,
@@ -36,9 +35,11 @@ import {
   submitSubscriptionManual,
   submitSubscriptionOnline,
 } from '../../data/services.js'
-import { getPlan, getTrainerSubscription } from '../../data/selectors.js'
+import { getPlan, getSubscriptionPaymentOptions, getTrainerSubscription } from '../../data/selectors.js'
+import { paymentMethodDescriptionKey, paymentMethodLabelKey } from '../../data/paymentMethods.js'
 import { slugify } from '../../lib/utils.js'
 import { Alert, Badge, Button, Card, Checkbox, Input, Label, Modal, ProgressBar, Select, Textarea } from '../../components/ui.jsx'
+import PlanComparison from '../../components/PlanComparison.jsx'
 import { cn } from '../../lib/utils.js'
 
 const steps = ['account', 'school', 'plan', 'done']
@@ -54,6 +55,10 @@ export default function OnboardingPage() {
   const subscription = user ? getTrainerSubscription(state, user.id) : null
   const draft = state.onboardingDrafts?.[user?.id] || {}
   const plans = state.plans.filter((plan) => plan.enabled).sort((a, b) => a.order - b.order)
+  const paymentOptions = useMemo(() => getSubscriptionPaymentOptions(state), [state])
+  const onlineOptions = paymentOptions.filter((option) => option.group === 'online')
+  const manualOptions = paymentOptions.filter((option) => option.group === 'manual')
+  const manualPayment = state.platformSettings?.manualPayment || {}
 
   const [step, setStep] = useState(school?.id ? 2 : 1)
   const [name, setName] = useState(school?.name || '')
@@ -68,15 +73,17 @@ export default function OnboardingPage() {
   const [checking, setChecking] = useState(false)
   const [error, setError] = useState('')
   const [savingSchool, setSavingSchool] = useState(false)
-  const [selectedPlan, setSelectedPlan] = useState(subscription?.planId || draft.selectedPlanId || 'plan-pro')
+  const [selectedPlan, setSelectedPlan] = useState(draft.selectedPlanId || subscription?.planId || plans.find((plan) => plan.enabled)?.id || '')
   const [payOpen, setPayOpen] = useState(false)
-  const [payMethod, setPayMethod] = useState('online')
+  const [payTab, setPayTab] = useState('online')
+  const [payMethod, setPayMethod] = useState('')
   const [cardNumber, setCardNumber] = useState('4242 4242 4242 4242')
   const [cardName, setCardName] = useState(user?.name || '')
   const [cardExpiry, setCardExpiry] = useState('12/28')
   const [cardCvv, setCardCvv] = useState('123')
   const [reference, setReference] = useState(`TIW-${String(Date.now()).slice(-6)}`)
   const [proofName, setProofName] = useState('')
+  const [proofDataUrl, setProofDataUrl] = useState(null)
   const [accepted, setAccepted] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [planLoading, setPlanLoading] = useState(false)
@@ -108,15 +115,13 @@ export default function OnboardingPage() {
   }, [step, user.id])
 
   const selectedPlanData = getPlan(state, selectedPlan)
-  const planFeatures = selectedPlanData
-    ? language === 'ar'
-      ? selectedPlanData.featuresAr
-      : selectedPlanData.featuresFr
-    : []
 
   const subscriptionStatus = subscription?.status
   const pendingManual = subscriptionStatus === 'pending'
   const isActive = subscriptionStatus === 'active'
+  const selectedOption = paymentOptions.find((option) => option.id === payMethod) || null
+  const selectedGroup = selectedOption?.group || payTab
+  const needsReference = payMethod !== 'cash'
 
   function goNext() {
     setError('')
@@ -157,34 +162,32 @@ export default function OnboardingPage() {
     }, 500)
   }
 
-  function handleFreePlan() {
-    setError('')
-    setPlanLoading(true)
-    window.setTimeout(() => {
-      const result = submitSubscriptionManual({ userId: user.id, planId: 'plan-pro', reference: '', proofName: '' })
-      setPlanLoading(false)
-      if (!result.ok) {
-        toastError(t('errors.generic'))
-        return
-      }
-      success(t('onboarding.planActivated'))
-      setStep(4)
-    }, 450)
+  function switchPayTab(group) {
+    setPayTab(group)
+    const options = group === 'online' ? onlineOptions : manualOptions
+    setPayMethod(options[0]?.id || '')
   }
 
   function handleProceedPlan() {
     if (!selectedPlanData) return
+    const firstGroup = onlineOptions.length ? 'online' : 'manual'
+    setPayTab(firstGroup)
+    setPayMethod((onlineOptions.length ? onlineOptions : manualOptions)[0]?.id || '')
     setPayOpen(true)
     setAccepted(false)
   }
 
   function handlePayOnline() {
+    if (!onlineOptions.some((option) => option.id === payMethod)) {
+      toastError(t('subscription.paymentFailed'))
+      return
+    }
     setProcessing(true)
     window.setTimeout(() => {
       const result = submitSubscriptionOnline({
         userId: user.id,
         planId: selectedPlanData.id,
-        provider: 'chargerly',
+        provider: payMethod,
         outcome: cardNumber.replace(/\s/g, '').startsWith('4242') && cardCvv.length >= 3 ? 'success' : 'failed',
       })
       setProcessing(false)
@@ -199,30 +202,47 @@ export default function OnboardingPage() {
   }
 
   function handlePayManual() {
+    if (!manualOptions.some((option) => option.id === payMethod)) {
+      toastError(t('subscription.paymentFailed'))
+      return
+    }
+    if (needsReference && !reference.trim()) {
+      toastError(t('checkout.referenceRequired'))
+      return
+    }
     if (!proofName) {
       toastError(t('subscription.receiptRequired'))
       return
     }
     setProcessing(true)
     window.setTimeout(() => {
-      submitSubscriptionManual({
+      const result = submitSubscriptionManual({
         userId: user.id,
         planId: selectedPlanData.id,
-        reference,
+        method: payMethod,
+        provider: payMethod,
+        reference: reference.trim(),
         proofName,
-        proofDataUrl: null,
+        proofDataUrl,
       })
       setProcessing(false)
+      if (!result.ok) {
+        toastError(t('subscription.paymentFailed'))
+        return
+      }
       setPayOpen(false)
       info(t('subscription.manualSuccess'))
       setStep(4)
     }, 900)
   }
 
-  function finishLater() {
-    completeOnboarding(user.id)
-    success(t('onboarding.completed'))
-    navigate('/trainer')
+  function pickProof(event) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setProofName(file.name)
+    const reader = new FileReader()
+    reader.onload = () => setProofDataUrl(reader.result)
+    reader.readAsDataURL(file)
   }
 
   const stepIndex = step
@@ -463,51 +483,30 @@ export default function OnboardingPage() {
                 <p className="mt-1 text-sm text-muted">{t('onboarding.planSubtitle')}</p>
               </div>
               {isActive ? (
-                <Alert tone="success" className="mx-auto mt-5 max-w-xl" icon={BadgeCheck}>{t('onboarding.planActivated')} — {t('subscription.currentPlan')}: {selectedPlanData?.nameFr}.</Alert>
+                <Alert tone="success" className="mx-auto mt-5 max-w-xl" icon={BadgeCheck}>{t('onboarding.planActivated')} — {t('subscription.currentPlan')}: {language === 'ar' ? selectedPlanData?.nameAr : selectedPlanData?.nameFr}.</Alert>
               ) : null}
-              <div className="mx-auto mt-6 grid max-w-3xl gap-4 md:grid-cols-2">
-                {plans.map((plan) => {
-                  const isPro = plan.code === 'pro' || plan.id === 'plan-pro'
-                  const active = selectedPlan === plan.id
-                  const features = language === 'ar' ? plan.featuresAr : plan.featuresFr
-                  return (
-                    <button key={plan.id} type="button" onClick={() => setSelectedPlan(plan.id)} className="text-start">
-                      <Card className={cn('relative h-full p-5 transition', active ? 'border-brand ring-2 ring-brand/15' : 'hover:border-brand/30')}>
-                        {isPro ? <span className="absolute -top-2.5 start-5 rounded-full bg-brand px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">{t('subscription.recommended')}</span> : null}
-                        <div className="flex items-center justify-between">
-                          <p className="text-base font-bold text-ink">{language === 'ar' ? plan.nameAr : plan.nameFr}</p>
-                          <span className={cn('grid h-5 w-5 place-items-center rounded-full border', active ? 'border-brand bg-brand text-white' : 'border-line')}>
-                            {active ? <Check size={12} strokeWidth={3} /> : null}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-[11px] leading-relaxed text-muted">{language === 'ar' ? plan.descAr : plan.descFr}</p>
-                        <div className="mt-3 flex items-end gap-1">
-                          <span className="brand-font text-2xl font-bold text-ink">{money(plan.priceDA)}</span>
-                          <span className="pb-0.5 text-[11px] text-muted">{plan.priceDA === 0 ? t('subscription.freeForever') : t('common.perMonth')}</span>
-                        </div>
-                        <ul className="mt-4 space-y-2">
-                          {features.map((feature) => (
-                            <li key={feature} className="flex items-start gap-2 text-[11px] text-muted">
-                              <Check size={12} className="mt-0.5 shrink-0 text-brand" /> {feature}
-                            </li>
-                          ))}
-                        </ul>
-                      </Card>
-                    </button>
-                  )
-                })}
-              </div>
+              <PlanComparison
+                plans={plans}
+                className="mx-auto mt-4 max-w-4xl"
+                currentPlanId={selectedPlan}
+                renderAction={(plan) => (
+                  <Button
+                    fullWidth
+                    variant={selectedPlan === plan.id ? 'primary' : 'secondary'}
+                    onClick={() => setSelectedPlan(plan.id)}
+                  >
+                    {selectedPlan === plan.id ? t('onboarding.planSelected') : t('subscription.choosePlan')}
+                  </Button>
+                )}
+              />
               {error ? <Alert tone="danger" className="mx-auto mt-4 max-w-3xl">{error}</Alert> : null}
-              <div className="mx-auto mt-6 flex max-w-3xl flex-wrap items-center justify-between gap-3">
-                <div className="flex gap-2">
-                  <Button variant="ghost" onClick={() => setStep(2)} icon={ArrowLeft}>{t('common.back')}</Button>
-                  <Button variant="ghost" onClick={finishLater}>{t('onboarding.chooseLater')}</Button>
-                </div>
-                <Button onClick={handleProceedPlan} loading={planLoading} icon={selectedPlanData?.code === 'pro' ? CreditCard : Rocket} size="lg">
-                  {t('onboarding.continueWithPro')}
+              <div className="mx-auto mt-4 flex max-w-4xl flex-wrap items-center justify-between gap-3">
+                <Button variant="ghost" onClick={() => setStep(2)} icon={ArrowLeft}>{t('common.back')}</Button>
+                <Button onClick={handleProceedPlan} disabled={!selectedPlanData} icon={CreditCard} size="lg">
+                  {t('payments.choosePlan')}
                 </Button>
               </div>
-<p className="mx-auto mt-3 max-w-3xl text-center text-[11px] text-muted">{t('onboarding.proPlanNotice')}</p>
+              <p className="mx-auto mt-3 max-w-3xl text-center text-[11px] text-muted">{t('subscription.paymentRequired')}</p>
             </div>
           ) : null}
 
@@ -522,7 +521,7 @@ export default function OnboardingPage() {
                     {pendingManual ? t('subscription.pendingReview') : isActive ? t('onboarding.readyTitle') : t('onboarding.title')}
                   </h2>
                   <p className="mx-auto mt-2 max-w-md text-sm text-white/70">
-                    {pendingManual ? t('subscription.pendingReviewDesc') : isActive ? t('onboarding.readySubtitle') : t('onboarding.chooseLater')}
+                    {pendingManual ? t('subscription.pendingReviewDesc') : isActive ? t('onboarding.readySubtitle') : t('subscription.paymentRequired')}
                   </p>
                 </div>
                 <div className="p-5 sm:p-6">
@@ -583,24 +582,44 @@ export default function OnboardingPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setPayOpen(false)} disabled={processing}>{t('common.cancel')}</Button>
-            <Button onClick={payMethod === 'online' ? handlePayOnline : handlePayManual} loading={processing} icon={Lock}>
-              {payMethod === 'online' ? money(selectedPlanData?.priceDA || 0) : t('subscription.submitManual')}
+            <Button onClick={selectedGroup === 'online' ? handlePayOnline : handlePayManual} loading={processing} icon={Lock}>
+              {selectedGroup === 'online' ? money(selectedPlanData?.priceDA || 0) : t('subscription.submitManual')}
             </Button>
           </>
         }
       >
         <div className="grid gap-1 rounded-xl bg-surface p-1 sm:grid-cols-2">
-          <button type="button" onClick={() => setPayMethod('online')} className={cn('flex items-center gap-2 rounded-lg px-3 py-2.5 text-start text-xs font-semibold transition', payMethod === 'online' ? 'bg-white text-ink shadow-sm' : 'text-muted')}>
+          <button type="button" onClick={() => switchPayTab('online')} disabled={!onlineOptions.length} className={cn('flex items-center gap-2 rounded-lg px-3 py-2.5 text-start text-xs font-semibold transition disabled:opacity-50', selectedGroup === 'online' ? 'bg-white text-ink shadow-sm' : 'text-muted')}>
             <CreditCard size={15} /> {t('subscription.payOnline')}
           </button>
-          <button type="button" onClick={() => setPayMethod('manual')} className={cn('flex items-center gap-2 rounded-lg px-3 py-2.5 text-start text-xs font-semibold transition', payMethod === 'manual' ? 'bg-white text-ink shadow-sm' : 'text-muted')}>
+          <button type="button" onClick={() => switchPayTab('manual')} disabled={!manualOptions.length} className={cn('flex items-center gap-2 rounded-lg px-3 py-2.5 text-start text-xs font-semibold transition disabled:opacity-50', selectedGroup === 'manual' ? 'bg-white text-ink shadow-sm' : 'text-muted')}>
             <Landmark size={15} /> {t('subscription.payManual')}
           </button>
         </div>
 
+        <div className="mt-3">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted">
+            {selectedGroup === 'online' ? t('subscription.onlinePayment') : t('subscription.manualPayment')}
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {(selectedGroup === 'online' ? onlineOptions : manualOptions).map((option) => (
+              <button key={option.id} type="button" onClick={() => setPayMethod(option.id)} className={cn('flex items-center gap-3 rounded-xl border p-3 text-start transition', payMethod === option.id ? 'border-brand bg-brand-soft/50 ring-2 ring-brand/10' : 'border-line bg-white hover:border-brand/40')}>
+                <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-lg', payMethod === option.id ? 'bg-brand text-white' : 'bg-surface text-brand')}>
+                  {option.group === 'online' ? <CreditCard size={17} /> : <Landmark size={17} />}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-xs font-semibold text-ink">{t(paymentMethodLabelKey(option.id))}</span>
+                  <span className="mt-0.5 block truncate text-[10px] text-muted">{t(paymentMethodDescriptionKey(option.id))}</span>
+                </span>
+                {payMethod === option.id ? <CheckCircle2 size={15} className="ms-auto shrink-0 text-brand" /> : null}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="mt-4 rounded-xl border border-line p-3">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted">{t('subscription.planLabel', { plan: selectedPlanData?.nameFr || '' })}</span>
+            <span className="text-muted">{t('subscription.planLabel', { plan: language === 'ar' ? selectedPlanData?.nameAr || '' : selectedPlanData?.nameFr || '' })}</span>
             <span className="font-semibold text-ink">{money(selectedPlanData?.priceDA || 0)}</span>
           </div>
           <div className="mt-2 flex items-center justify-between border-t border-line pt-2 text-sm">
@@ -609,9 +628,9 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        {payMethod === 'online' ? (
+        {selectedGroup === 'online' ? (
           <div className="mt-4">
-            <Alert tone="info" icon={ShieldCheck}>{t('subscription.cardDemoHint')}</Alert>
+            <Alert tone="info" icon={ShieldCheck} title={t('payments.chargily')}>{t('subscription.onlineSimulated')}</Alert>
             <div className="mt-3 space-y-3">
               <div>
                 <Label>{t('subscription.cardNumber')}</Label>
@@ -637,12 +656,19 @@ export default function OnboardingPage() {
           <div className="mt-4 space-y-3">
             <Alert tone="info" icon={Info}>{t('subscription.manualInstructions')}</Alert>
             <div className="rounded-xl border border-line bg-surface/60 p-3 text-[11px]">
-              <p className="font-semibold text-ink">{t('subscription.bankDetails')}</p>
-              <p className="mt-1 text-muted">BNA · Tiwanza SARL</p>
-              <p className="text-muted" dir="ltr">RIB: 001 234 567 890 123 456 78</p>
+              <p className="font-semibold text-ink">{t(paymentMethodLabelKey(payMethod))}</p>
+              {manualPayment.ccp ? <p className="mt-1 text-muted" dir="ltr">CCP: {manualPayment.ccp}</p> : null}
+              {manualPayment.bank?.name || manualPayment.bank?.agency ? (
+                <p className="mt-1 text-muted">{[manualPayment.bank.name, manualPayment.bank.agency].filter(Boolean).join(' · ')}</p>
+              ) : null}
+              {manualPayment.bank?.rib ? <p className="mt-1 text-muted" dir="ltr">RIB: {manualPayment.bank.rib}</p> : null}
+              {manualPayment.beneficiary ? <p className="mt-1 text-muted">{manualPayment.beneficiary}</p> : null}
+              {payMethod === 'cash' ? (
+                <p className="mt-1 text-muted">{language === 'ar' ? manualPayment.cashInstructionsAr : manualPayment.cashInstructionsFr}</p>
+              ) : null}
             </div>
             <div>
-              <Label>{t('subscription.reference')}</Label>
+              <Label required={needsReference}>{t('subscription.reference')}</Label>
               <Input value={reference} onChange={(e) => setReference(e.target.value)} dir="ltr" />
             </div>
             <div>
@@ -653,7 +679,7 @@ export default function OnboardingPage() {
                   <span className="block truncate text-xs font-medium text-ink">{proofName || t('common.upload')}</span>
                   <span className="block text-[10px] text-muted">{t('subscription.receiptHint')}</span>
                 </span>
-                <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => setProofName(e.target.files?.[0]?.name || '')} />
+                <input type="file" accept="image/*,.pdf" className="hidden" onChange={pickProof} />
               </label>
             </div>
             <Checkbox checked={accepted} onChange={(e) => setAccepted(e.target.checked)} label={t('subscription.secure')} />

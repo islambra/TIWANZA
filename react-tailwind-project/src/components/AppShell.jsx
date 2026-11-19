@@ -6,18 +6,17 @@ import {
   BookOpen,
   Building2,
   CalendarDays,
+  Check,
   ChevronDown,
+  ChevronRight,
   ClipboardList,
   CreditCard,
   FileQuestion,
-  Globe2,
   GraduationCap,
   Home,
-  Languages,
   LayoutDashboard,
   LifeBuoy,
   LogOut,
-  Mail,
   Megaphone,
   Menu,
   MessageSquare,
@@ -40,51 +39,70 @@ import { useToast } from '../context/ToastContext.jsx'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useTiwanzaStore } from '../data/store.js'
 import {
+  canUsePlanFeature,
   getSchool,
   getSchoolEnrollments,
   getUnreadAnnouncements,
   getTrainerProfile,
 } from '../data/selectors.js'
-import { resetDemoData, demoLogin } from '../data/services.js'
+import { resetDemoData, demoLogin, markAnnouncementRead } from '../data/services.js'
 import { cn } from '../lib/utils.js'
-import { Avatar, Badge, Button, IconButton } from './ui.jsx'
+import { Avatar, Badge, EmptyState, IconButton } from './ui.jsx'
+import LanguageSwitcher from './LanguageSwitcher.jsx'
+
+const COLLAPSED_KEY = 'tiwanza_sidebar_collapsed'
+
+const NAV_GROUPS = [
+  { id: 'overview', key: 'nav.groupOverview' },
+  { id: 'teaching', key: 'nav.groupTeaching' },
+  { id: 'operations', key: 'nav.groupOperations' },
+  { id: 'settings', key: 'nav.groupSettings' },
+]
 
 const adminNav = [
-  { key: 'nav.dashboard', to: '/admin', icon: LayoutDashboard, end: true },
-  { key: 'adminSchools.title', to: '/admin/schools', icon: School },
-  { key: 'adminSubscriptions.title', to: '/admin/subscriptions', icon: CreditCard, badge: 'subscriptions' },
-  { key: 'adminPayments.title', to: '/admin/payments', icon: Wallet },
-  { key: 'adminUsers.title', to: '/admin/users', icon: Users },
-  { key: 'adminPlans.title', to: '/admin/plans', icon: Sparkles },
-  { key: 'adminActivity.title', to: '/admin/activity', icon: Activity },
-  { key: 'adminSupport.title', to: '/admin/support', icon: LifeBuoy, badge: 'support' },
-  { key: 'adminSettings.title', to: '/admin/settings', icon: Settings },
+  { key: 'nav.dashboard', to: '/admin', icon: LayoutDashboard, end: true, group: 'overview' },
+  { key: 'adminSchools.title', to: '/admin/schools', icon: School, group: 'operations' },
+  { key: 'adminSubscriptions.title', to: '/admin/subscriptions', icon: CreditCard, badge: 'subscriptions', group: 'operations' },
+  { key: 'adminPayments.title', to: '/admin/payments', icon: Wallet, group: 'operations' },
+  { key: 'adminUsers.title', to: '/admin/users', icon: Users, group: 'operations' },
+  { key: 'adminPlans.title', to: '/admin/plans', icon: Sparkles, group: 'operations' },
+  { key: 'adminActivity.title', to: '/admin/activity', icon: Activity, group: 'overview' },
+  { key: 'adminSupport.title', to: '/admin/support', icon: LifeBuoy, badge: 'support', group: 'operations' },
+  { key: 'adminSettings.title', to: '/admin/settings', icon: Settings, group: 'settings' },
 ]
 
 const trainerNav = [
-  { key: 'nav.dashboard', to: '/trainer', icon: LayoutDashboard, end: true },
-  { key: 'trainerCourses.title', to: '/trainer/courses', icon: BookOpen },
-  { key: 'trainerLearners.title', to: '/trainer/learners', icon: Users },
-  { key: 'trainerEnrollments.title', to: '/trainer/enrollments', icon: ClipboardList, badge: 'enrollments' },
-  { key: 'trainerPayments.title', to: '/trainer/payments', icon: Wallet, badge: 'payments' },
-  { key: 'trainerSales.title', to: '/trainer/sales', icon: TrendingUp },
-  { key: 'trainerQuizzes.title', to: '/trainer/quizzes', icon: FileQuestion },
-  { key: 'trainerAnnouncements.title', to: '/trainer/announcements', icon: Megaphone },
-  { key: 'trainerComments.title', to: '/trainer/comments', icon: MessageSquare },
-  { key: 'trainerCalendar.title', to: '/trainer/calendar', icon: CalendarDays },
-  { key: 'nav.school', to: '/trainer/school', icon: Building2 },
-  { key: 'trainerPaymentSettings.title', to: '/trainer/payment-settings', icon: CreditCard },
-  { key: 'subscription.title', to: '/trainer/subscription', icon: ShieldCheck },
+  { key: 'nav.dashboard', to: '/trainer', icon: LayoutDashboard, end: true, group: 'overview' },
+  { key: 'trainerCourses.title', to: '/trainer/courses', icon: BookOpen, group: 'teaching' },
+  { key: 'trainerLearners.title', to: '/trainer/learners', icon: Users, group: 'operations' },
+  { key: 'trainerEnrollments.title', to: '/trainer/enrollments', icon: ClipboardList, badge: 'enrollments', group: 'operations' },
+  { key: 'trainerPayments.title', to: '/trainer/payments', icon: Wallet, badge: 'payments', group: 'operations' },
+  { key: 'trainerSales.title', to: '/trainer/sales', icon: TrendingUp, group: 'operations' },
+  { key: 'trainerQuizzes.title', to: '/trainer/quizzes', icon: FileQuestion, group: 'teaching' },
+  { key: 'trainerAnnouncements.title', to: '/trainer/announcements', icon: Megaphone, group: 'teaching' },
+  { key: 'trainerComments.title', to: '/trainer/comments', icon: MessageSquare, group: 'teaching' },
+  { key: 'trainerCalendar.title', to: '/trainer/calendar', icon: CalendarDays, group: 'teaching' },
+  { key: 'nav.yourSchool', to: '/trainer/school', icon: Building2, group: 'operations' },
+  { key: 'trainerPaymentSettings.title', to: '/trainer/payment-settings', icon: CreditCard, group: 'settings' },
+  { key: 'subscription.title', to: '/trainer/subscription', icon: ShieldCheck, group: 'settings' },
+  { key: 'common.profile', to: '/trainer/profile', icon: UserRound, group: 'settings' },
 ]
 
 const learnerNav = [
-  { key: 'nav.dashboard', to: '/learn', icon: Home, end: true },
-  { key: 'learner.myCourses', to: '/learn/courses', icon: BookOpen },
-  { key: 'learner.announcements', to: '/learn/announcements', icon: Megaphone, badge: 'unread' },
-  { key: 'learner.quizResults', to: '/learn/quiz-results', icon: FileQuestion },
-  { key: 'learner.upcomingEvents', to: '/learn/calendar', icon: CalendarDays },
-  { key: 'learner.myPayments', to: '/learn/payments', icon: Receipt },
-  { key: 'learner.profile', to: '/learn/profile', icon: UserRound },
+  { key: 'nav.dashboard', to: '/learn', icon: Home, end: true, group: 'overview' },
+  { key: 'learner.myCourses', to: '/learn/courses', icon: BookOpen, group: 'teaching' },
+  { key: 'learner.announcements', to: '/learn/announcements', icon: Megaphone, badge: 'unread', group: 'teaching' },
+  { key: 'learner.quizResults', to: '/learn/quiz-results', icon: FileQuestion, group: 'teaching' },
+  { key: 'learner.upcomingEvents', to: '/learn/calendar', icon: CalendarDays, group: 'teaching' },
+  { key: 'learner.myPayments', to: '/learn/payments', icon: Receipt, group: 'operations' },
+  { key: 'learner.profile', to: '/learn/profile', icon: UserRound, group: 'settings' },
+]
+
+const detailNav = [
+  { pattern: /\/courses\/[^/]+/, key: 'nav.courses', group: 'teaching' },
+  { pattern: /\/schools\/[^/]+/, key: 'nav.schools', group: 'operations' },
+  { pattern: /\/announcements\/[^/]+/, key: 'common.announcement', group: 'teaching' },
+  { pattern: /\/profile$/, key: 'common.profile', group: 'settings' },
 ]
 
 function roleNav(role) {
@@ -95,13 +113,16 @@ function roleNav(role) {
 
 export default function AppShell() {
   const { user, isAdmin, isTrainer, isLearner, logout } = useAuth()
-  const { t, language, toggleLanguage } = useI18n()
+  const { t } = useI18n()
   const { success, info } = useToast()
   const state = useTiwanzaStore()
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.localStorage.getItem(COLLAPSED_KEY) === 'true'
+  })
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
 
@@ -111,8 +132,33 @@ export default function AppShell() {
     setProfileOpen(false)
   }, [location.pathname])
 
-  const nav = roleNav(user?.role)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem(COLLAPSED_KEY, String(collapsed))
+    } catch (error) {
+      console.warn('Tiwanza sidebar preference could not be persisted.', error)
+    }
+  }, [collapsed])
+
   const school = user?.schoolId ? getSchool(state, user.schoolId) : null
+  const learnerBase = school ? `/s/${school.slug}/learn` : '/learn'
+  const canUseCalendar = !isTrainer || canUsePlanFeature(state, user?.schoolId, 'calendar')
+  const baseNav = roleNav(user?.role).filter((item) => canUseCalendar || item.to !== '/trainer/calendar')
+  const learnerAliasPaths = {
+    '/learn/courses': `/s/${school?.slug}/courses`,
+    '/learn/announcements': `/s/${school?.slug}/announcements`,
+    '/learn/calendar': `/s/${school?.slug}/calendar`,
+    '/learn/payments': `/s/${school?.slug}/payments`,
+    '/learn/quiz-results': `/s/${school?.slug}/quiz-results`,
+    '/learn/profile': `/s/${school?.slug}/profile`,
+  }
+  const schoolNav = isLearner && school
+    ? baseNav.map((item) => item.to.startsWith('/learn') ? { ...item, to: learnerAliasPaths[item.to] || `/s/${school.slug}${item.to.slice('/learn'.length)}` } : item)
+    : baseNav
+  const nav = isLearner && school
+    ? [...schoolNav, { key: 'nav.publicSite', to: `/s/${school.slug}`, end: true, icon: Building2, group: 'operations' }]
+    : baseNav
   const profile = isTrainer ? getTrainerProfile(state, user.id) : null
   const pendingSubscriptionPayments = state.subscriptionPayments.filter((item) => item.status === 'pending').length
   const supportOpen = state.supportRequests.filter((item) => item.status === 'open' || item.status === 'in_progress').length
@@ -170,18 +216,28 @@ export default function AppShell() {
           icon: Megaphone,
           title: item.title,
           description: item.content,
-          to: `/learn/announcements/${item.id}`,
+          to: `${learnerBase}/announcements/${item.id}`,
         }))
     }
     return []
-  }, [state, isAdmin, isTrainer, isLearner, school, user, t])
+  }, [state, isAdmin, isTrainer, isLearner, school, learnerBase, user, t])
 
   const currentNav = [...nav].sort((a, b) => b.to.length - a.to.length).find((item) => {
     if (item.end) return location.pathname === item.to
     return location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)
   })
+  const detailMatch = detailNav.find((item) => item.pattern.test(location.pathname))
+  const activeNav = currentNav || (detailMatch ? { key: detailMatch.key, group: detailMatch.group } : null)
+  const pageTitle = activeNav ? t(activeNav.key) : t('nav.dashboard')
+  const dashboardPath = isLearner && school ? `/s/${school.slug}/learn` : roleHome[user?.role] || '/'
+  const isDashboardRoute = location.pathname.replace(/\/$/, '') === dashboardPath.replace(/\/$/, '')
 
-  const pageTitle = currentNav ? t(currentNav.key) : t('nav.dashboard')
+  const breadcrumbItems = isDashboardRoute ? [] : [{ label: t('common.home'), to: roleHome[user?.role] || '/' }]
+  if (!isDashboardRoute && activeNav) {
+    const group = NAV_GROUPS.find((item) => item.id === activeNav.group)
+    if (group) breadcrumbItems.push({ label: t(group.key) })
+    breadcrumbItems.push({ label: pageTitle })
+  }
 
   function handleLogout() {
     logout()
@@ -193,7 +249,8 @@ export default function AppShell() {
     const result = demoLogin(userId)
     if (result.ok) {
       info(t('auth.demoNotice'))
-      navigate(roleHome[result.user.role] || '/')
+      const demoSchool = result.user.schoolId ? state.schools.find((item) => item.id === result.user.schoolId) : null
+      navigate(demoSchool ? `/s/${demoSchool.slug}/learn` : roleHome[result.user.role] || '/')
     }
   }
 
@@ -203,10 +260,47 @@ export default function AppShell() {
     navigate('/login')
   }
 
+  function markAllRead() {
+    if (isLearner && user?.id) {
+      getUnreadAnnouncements(state, user.id).forEach((item) => markAnnouncementRead(item.id, user.id))
+    }
+    setNotificationsOpen(false)
+  }
+
+  function renderNavItem(item) {
+    const count = item.badge ? badgeCounts[item.badge] : 0
+    return (
+      <NavLink
+        key={item.to}
+        to={item.to}
+        end={item.end}
+        title={collapsed ? t(item.key) : undefined}
+        className={({ isActive }) =>
+          cn(
+            'group relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition focus-ring',
+            isActive
+              ? 'bg-brand-soft text-brand-dark shadow-sm ring-1 ring-brand/10'
+              : 'text-muted hover:bg-brand-soft/60 hover:text-ink',
+            collapsed && 'justify-center px-0',
+          )
+        }
+      >
+        <item.icon size={17} className="shrink-0" />
+        {!collapsed ? <span className="min-w-0 flex-1 truncate">{t(item.key)}</span> : null}
+        {!collapsed && count > 0 ? (
+          <span className="grid h-5 min-w-5 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold text-white">{count}</span>
+        ) : null}
+        {collapsed && count > 0 ? (
+          <span className="absolute end-1 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-brand ring-2 ring-white" />
+        ) : null}
+      </NavLink>
+    )
+  }
+
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className={cn('flex h-16 items-center gap-2 border-b border-line px-4', collapsed ? 'justify-center px-2' : 'justify-between')}>
-        <Link to={roleHome[user.role]} className="flex min-w-0 items-center gap-2.5">
+        <Link to={roleHome[user.role]} className="flex min-w-0 items-center gap-2.5 rounded-lg focus-ring">
           <span className="brand-gradient grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white shadow-sm">
             <GraduationCap size={19} />
           </span>
@@ -218,14 +312,15 @@ export default function AppShell() {
           ) : null}
         </Link>
         {!collapsed ? (
-          <IconButton label={t('common.closeMenu')} onClick={() => setCollapsed(true)} size="sm" className="hidden lg:inline-grid">
+          <IconButton label={t('common.collapseSidebar')} onClick={() => setCollapsed(true)} size="sm" className="hidden lg:inline-grid focus-ring">
             <PanelLeftClose size={16} />
           </IconButton>
         ) : null}
       </div>
 
       {!collapsed && isTrainer && school ? (
-        <div className="mx-3 mt-3 rounded-xl border border-line bg-surface/60 p-2.5">
+        <div className="mx-3 mt-3 rounded-card border border-line bg-surface/60 p-2.5 shadow-card">
+          <p className="eyebrow mb-1.5">{t('nav.yourSchool')}</p>
           <div className="flex items-center gap-2">
             <Avatar name={school.name} src={school.logo} size="sm" />
             <div className="min-w-0">
@@ -236,60 +331,35 @@ export default function AppShell() {
         </div>
       ) : null}
 
-      <nav className={cn('thin-scroll mt-3 flex-1 overflow-y-auto px-2 pb-4', collapsed && 'px-1.5')}>
-        <div className="space-y-0.5">
-          {nav.map((item) => {
-            const count = item.badge ? badgeCounts[item.badge] : 0
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                title={collapsed ? t(item.key) : undefined}
-                className={({ isActive }) =>
-                  cn(
-                    'group flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition',
-                    isActive ? 'bg-brand-soft text-brand-dark' : 'text-muted hover:bg-surface hover:text-ink',
-                    collapsed && 'justify-center px-0',
-                  )
-                }
-              >
-                <item.icon size={17} className="shrink-0" />
-                {!collapsed ? <span className="min-w-0 flex-1 truncate">{t(item.key)}</span> : null}
-                {!collapsed && count > 0 ? (
-                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold text-white">{count}</span>
-                ) : null}
-                {collapsed && count > 0 ? <span className="absolute h-1.5 w-1.5 rounded-full bg-brand" /> : null}
-              </NavLink>
-            )
-          })}
-        </div>
-
-        {!collapsed && isLearner && school ? (
-          <div className="mt-4 border-t border-line pt-3">
-            <Link
-              to={`/s/${school.slug}`}
-              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium text-muted transition hover:bg-surface hover:text-ink"
-            >
-              <Building2 size={17} />
-              <span className="flex-1 truncate">{t('nav.publicSite')}</span>
-            </Link>
-          </div>
-        ) : null}
+      <nav aria-label={t('nav.platform')} className={cn('thin-scroll mt-3 flex-1 overflow-y-auto px-2 pb-4', collapsed && 'px-1.5')}>
+        {NAV_GROUPS.map((group) => {
+          const items = nav.filter((item) => item.group === group.id)
+          if (!items.length) return null
+          return (
+            <div key={group.id} className="mb-4 last:mb-0">
+              {!collapsed ? (
+                <p className="section-title mb-1.5 px-2.5">{t(group.key)}</p>
+              ) : (
+                <div className="mx-auto my-2 h-px w-8 bg-line" />
+              )}
+              <div className="space-y-0.5">{items.map(renderNavItem)}</div>
+            </div>
+          )
+        })}
       </nav>
 
       <div className={cn('border-t border-line p-2', collapsed && 'px-1.5')}>
-        <div className={cn('rounded-xl bg-surface/70 p-2.5', collapsed && 'flex justify-center')}>
+        <div className={cn('rounded-card bg-surface/70 p-2.5 shadow-card', collapsed && 'flex justify-center')}>
           {!collapsed ? (
             <div className="flex items-start gap-2">
-              <Sparkles size={15} className="mt-0.5 shrink-0 text-brand" />
+              <Sparkles size={15} className="mt-0.5 shrink-0 animate-float text-brand" />
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold text-ink">{t('app.demoBadge')}</p>
                 <p className="mt-0.5 text-[10px] leading-relaxed text-muted">{t('app.version')} · {t('common.simulated')}</p>
               </div>
             </div>
           ) : (
-            <Sparkles size={15} className="text-brand" />
+            <Sparkles size={15} className="animate-float text-brand" />
           )}
         </div>
       </div>
@@ -300,7 +370,7 @@ export default function AppShell() {
     <div className="min-h-screen bg-surface">
       <aside
         className={cn(
-          'fixed inset-y-0 start-0 z-40 hidden border-e border-line bg-white transition-[width] duration-200 lg:block',
+          'fixed inset-y-0 start-0 z-40 hidden border-e border-line bg-white shadow-card transition-[width] duration-base lg:block',
           collapsed ? 'w-[72px]' : 'w-[252px]',
         )}
       >
@@ -310,9 +380,9 @@ export default function AppShell() {
       {mobileOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button type="button" aria-label={t('common.closeMenu')} className="absolute inset-0 bg-ink/35" onClick={() => setMobileOpen(false)} />
-          <div className="relative z-10 h-full w-[280px] animate-slide-end border-e border-line bg-white">
+          <div className="relative z-10 flex h-full w-[280px] animate-slide-start flex-col border-e border-line bg-white shadow-popover">
             <div className="absolute end-2 top-2 z-10">
-              <IconButton label={t('common.closeMenu')} onClick={() => setMobileOpen(false)} size="sm">
+              <IconButton label={t('common.closeMenu')} onClick={() => setMobileOpen(false)} size="sm" className="focus-ring">
                 <X size={17} />
               </IconButton>
             </div>
@@ -321,52 +391,81 @@ export default function AppShell() {
         </div>
       ) : null}
 
-      <div className={cn('transition-[padding] duration-200', collapsed ? 'lg:ps-[72px]' : 'lg:ps-[252px]')}>
+      <div className={cn('transition-[padding] duration-base', collapsed ? 'lg:ps-[72px]' : 'lg:ps-[252px]')}>
         <header className="sticky top-0 z-30 border-b border-line bg-white/90 backdrop-blur">
           <div className="flex h-16 items-center gap-2 px-3 sm:px-5">
-            <IconButton label={t('common.openMenu')} onClick={() => setMobileOpen(true)} className="lg:hidden">
+            <IconButton label={t('common.openMenu')} onClick={() => setMobileOpen(true)} className="lg:hidden focus-ring">
               <Menu size={19} />
             </IconButton>
             {collapsed ? (
-              <IconButton label={t('common.openMenu')} onClick={() => setCollapsed(false)} className="hidden lg:inline-grid">
+              <IconButton label={t('common.expandSidebar')} onClick={() => setCollapsed(false)} className="hidden lg:inline-grid focus-ring">
                 <PanelLeftOpen size={17} />
               </IconButton>
             ) : null}
 
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-ink">{pageTitle}</p>
+              {!isDashboardRoute ? (
+                <nav aria-label={t('nav.workspace')} className="mb-0.5 hidden min-w-0 items-center gap-1.5 text-[11px] text-muted md:flex">
+                  {breadcrumbItems.map((crumb, index) => (
+                    <span key={`${crumb.label}-${index}`} className="flex min-w-0 items-center gap-1.5">
+                      {index > 0 ? <ChevronRight size={11} className="shrink-0 text-muted/70 rtl:rotate-180" aria-hidden="true" /> : null}
+                      {crumb.to && index < breadcrumbItems.length - 1 ? (
+                        <Link to={crumb.to} className="truncate transition hover:text-ink focus-ring">{crumb.label}</Link>
+                      ) : (
+                        <span className="truncate font-medium text-ink">{crumb.label}</span>
+                      )}
+                    </span>
+                  ))}
+                </nav>
+              ) : null}
+              {!isDashboardRoute ? <p className="truncate text-sm font-semibold text-ink">{pageTitle}</p> : null}
               <p className="hidden truncate text-[11px] text-muted sm:block">
                 {isTrainer && school ? school.name : t('app.tagline')}
               </p>
             </div>
 
             <div className="flex items-center gap-1.5">
-              <Button variant="ghost" size="sm" onClick={toggleLanguage} className="hidden px-2.5 sm:inline-flex" title={t('common.language')}>
-                <Languages size={15} />
-                <span className="text-xs font-bold uppercase">{language === 'fr' ? 'FR' : language === 'ar' ? 'AR' : 'EN'}</span>
-              </Button>
+              <div className="hidden sm:block">
+                <LanguageSwitcher variant="ghost" />
+              </div>
 
               <div className="relative">
-                <IconButton label={t('common.notifications')} onClick={() => { setNotificationsOpen((v) => !v); setProfileOpen(false) }} className="relative">
+                <IconButton
+                  label={t('common.notifications')}
+                  onClick={() => { setNotificationsOpen((v) => !v); setProfileOpen(false) }}
+                  aria-expanded={notificationsOpen}
+                  aria-haspopup="dialog"
+                  className="relative focus-ring"
+                >
                   <Bell size={17} />
                   {notifications.length ? <span className="absolute end-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-danger ring-2 ring-white" /> : null}
                 </IconButton>
                 {notificationsOpen ? (
                   <>
-                    <button type="button" aria-label="Fermer" className="fixed inset-0 z-20 cursor-default" onClick={() => setNotificationsOpen(false)} />
-                    <div className="absolute end-0 top-full z-30 mt-2 w-[320px] max-w-[calc(100vw-24px)] animate-slide-up overflow-hidden rounded-xl border border-line bg-white shadow-xl">
+                    <button type="button" aria-label={t('common.closeDropdown')} className="fixed inset-0 z-20 cursor-default" onClick={() => setNotificationsOpen(false)} />
+                    <div role="dialog" aria-label={t('common.notifications')} className="absolute end-0 top-full z-30 mt-2 w-[320px] max-w-[calc(100vw-24px)] animate-slide-up overflow-hidden rounded-card border border-line bg-white shadow-popover">
                       <div className="flex items-center justify-between border-b border-line px-4 py-3">
                         <p className="text-xs font-semibold text-ink">{t('common.notifications')}</p>
-                        <Badge tone="brand">{notifications.length}</Badge>
+                        <div className="flex items-center gap-1.5">
+                          <Badge tone="brand">{notifications.length}</Badge>
+                          {notifications.length && isLearner ? (
+                            <IconButton label={t('common.markAsRead')} onClick={markAllRead} size="sm" className="focus-ring">
+                              <Check size={14} />
+                            </IconButton>
+                          ) : null}
+                          <IconButton label={t('common.closeDropdown')} onClick={() => setNotificationsOpen(false)} size="sm" className="focus-ring">
+                            <X size={14} />
+                          </IconButton>
+                        </div>
                       </div>
                       {notifications.length ? (
-                        <div className="max-h-80 overflow-y-auto">
+                        <div className="thin-scroll max-h-80 overflow-y-auto">
                           {notifications.map((item) => (
                             <button
                               key={item.id}
                               type="button"
                               onClick={() => { setNotificationsOpen(false); navigate(item.to) }}
-                              className="flex w-full items-start gap-2.5 border-b border-line/70 px-4 py-3 text-start transition last:border-0 hover:bg-surface"
+                              className="flex w-full items-start gap-2.5 border-b border-line/70 px-4 py-3 text-start transition last:border-0 hover:bg-surface focus-ring"
                             >
                               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand">
                                 <item.icon size={15} />
@@ -379,7 +478,7 @@ export default function AppShell() {
                           ))}
                         </div>
                       ) : (
-                        <p className="px-4 py-8 text-center text-xs text-muted">{t('activity.noActivity')}</p>
+                        <EmptyState icon={Bell} title={t('notification.emptyTitle')} description={t('notification.emptyDesc')} compact />
                       )}
                     </div>
                   </>
@@ -389,8 +488,11 @@ export default function AppShell() {
               <div className="relative">
                 <button
                   type="button"
+                  aria-label={t('common.profile')}
+                  aria-expanded={profileOpen}
+                  aria-haspopup="menu"
                   onClick={() => { setProfileOpen((v) => !v); setNotificationsOpen(false) }}
-                  className="flex items-center gap-2 rounded-lg p-1 transition hover:bg-surface"
+                  className="flex items-center gap-2 rounded-lg p-1 transition hover:bg-surface focus-ring"
                 >
                   <Avatar name={user.name} size="sm" />
                   <span className="hidden min-w-0 text-start sm:block">
@@ -401,36 +503,36 @@ export default function AppShell() {
                 </button>
                 {profileOpen ? (
                   <>
-                    <button type="button" aria-label="Fermer" className="fixed inset-0 z-20 cursor-default" onClick={() => setProfileOpen(false)} />
-                    <div className="absolute end-0 top-full z-30 mt-2 w-64 animate-slide-up overflow-hidden rounded-xl border border-line bg-white shadow-xl">
+                    <button type="button" aria-label={t('common.closeDropdown')} className="fixed inset-0 z-20 cursor-default" onClick={() => setProfileOpen(false)} />
+                    <div className="absolute end-0 top-full z-30 mt-2 w-64 animate-slide-up overflow-visible rounded-card border border-line bg-white shadow-popover">
                       <div className="border-b border-line px-4 py-3">
                         <p className="truncate text-sm font-semibold text-ink">{user.name}</p>
                         <p className="truncate text-[11px] text-muted">{user.email}</p>
                         <Badge tone="brand" className="mt-2">{t(`roles.${user.role}`)}</Badge>
                       </div>
                       <div className="p-1">
-                        <button type="button" onClick={() => { setProfileOpen(false); navigate(isTrainer ? '/trainer/profile' : isLearner ? '/learn/profile' : '/admin/settings') }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-ink hover:bg-surface">
+                        <button type="button" onClick={() => { setProfileOpen(false); navigate(isTrainer ? '/trainer/profile' : isLearner ? `${learnerBase}/profile` : '/admin/settings') }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-ink hover:bg-surface focus-ring">
                           <UserRound size={14} /> {t('common.profile')}
                         </button>
-                        <button type="button" onClick={toggleLanguage} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-ink hover:bg-surface sm:hidden">
-                          <Languages size={14} /> {language === 'fr' ? 'Français' : language === 'ar' ? 'العربية' : 'English'}
-                        </button>
+                        <div className="sm:hidden">
+                          <LanguageSwitcher variant="row" />
+                        </div>
                         <div className="my-1 border-t border-line" />
                         <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted">{t('common.demoAccount')}</p>
-                        <button type="button" onClick={() => switchDemo('u-admin')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-ink hover:bg-surface">
+                        <button type="button" onClick={() => switchDemo('u-admin')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-ink hover:bg-surface focus-ring">
                           <ShieldCheck size={14} /> {t('auth.demoAdmin')}
                         </button>
-                        <button type="button" onClick={() => switchDemo('u-t1')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-ink hover:bg-surface">
+                        <button type="button" onClick={() => switchDemo('u-t1')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-ink hover:bg-surface focus-ring">
                           <GraduationCap size={14} /> {t('auth.demoTrainer')}
                         </button>
-                        <button type="button" onClick={() => switchDemo('u-l1')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-ink hover:bg-surface">
+                        <button type="button" onClick={() => switchDemo('u-l1')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-ink hover:bg-surface focus-ring">
                           <BookOpen size={14} /> {t('auth.demoLearner')}
                         </button>
                         <div className="my-1 border-t border-line" />
-                        <button type="button" onClick={resetDemo} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-muted hover:bg-surface hover:text-ink">
+                        <button type="button" onClick={resetDemo} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-muted hover:bg-surface hover:text-ink focus-ring">
                           <RotateCcw size={14} /> {t('adminSettings.resetDemo')}
                         </button>
-                        <button type="button" onClick={handleLogout} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-danger hover:bg-danger-soft">
+                        <button type="button" onClick={handleLogout} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-danger hover:bg-danger-soft focus-ring">
                           <LogOut size={14} /> {t('common.logout')}
                         </button>
                       </div>
