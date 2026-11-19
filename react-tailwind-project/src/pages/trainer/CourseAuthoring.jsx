@@ -261,7 +261,7 @@ export function CoursePreviewPanel({ courseId }) {
             const sectionLessons = lessons.filter((lesson) => lesson.sectionId === section.id)
             return (
               <div key={section.id} className="overflow-hidden rounded-xl border border-line bg-white">
-                <div className="flex items-center gap-2 border-b border-line bg-surface/60 px-4 py-3"><span className="grid h-6 w-6 place-items-center rounded-lg bg-white text-[10px] font-bold text-muted shadow-sm">{index + 1}</span><div><p className="text-xs font-semibold text-ink">{section.title || t('courseContent.untitledSection')}</p><p className="text-[10px] text-muted">{t('trainerCourses.lessonsCount', { count: sectionLessons.length })}</p></div></div>
+                <div className="flex items-center gap-2 border-b border-line bg-surface/60 px-4 py-3"><span className="grid h-6 w-6 place-items-center rounded-lg bg-white text-[10px] font-bold text-muted shadow-sm">{index + 1}</span><div className="min-w-0"><p className="truncate text-xs font-semibold text-ink">{section.title || t('courseContent.untitledSection')}</p><p className="text-[10px] text-muted">{t('trainerCourses.lessonsCount', { count: sectionLessons.length })}</p></div></div>
                 <div className="divide-y divide-line">
                   {sectionLessons.map((lesson) => <div key={lesson.id} className="flex items-center gap-2 px-4 py-2.5 text-xs"><span className="grid h-6 w-6 place-items-center rounded-lg bg-brand-soft text-brand">{lesson.type === 'quiz' ? <ListChecks size={12} /> : <FileText size={12} />}</span><span className="min-w-0 flex-1 truncate text-ink">{lesson.title || t('courseContent.untitledLesson')}</span>{lesson.preview ? <Badge tone="success">{t('courseContent.lessonFreePreview')}</Badge> : null}<span className="text-[10px] text-muted">{lesson.durationMin} min</span></div>)}
                 </div>
@@ -274,8 +274,8 @@ export function CoursePreviewPanel({ courseId }) {
       {mode === 'lesson' ? (
         <div className="overflow-hidden rounded-xl border border-line bg-white">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface/60 px-4 py-2.5">
-            <p className="text-xs font-semibold text-ink">{selectedLesson?.title || t('courseWizard.noLessonYet')}</p>
-            {contentLessons.length ? <Select value={selectedLesson?.id || ''} onChange={(event) => setLessonId(event.target.value)} className="h-8 w-auto min-w-40 text-[11px]">{contentLessons.map((lesson) => <option key={lesson.id} value={lesson.id}>{lesson.title || t('courseContent.untitledLesson')}</option>)}</Select> : null}
+            <p className="min-w-0 truncate text-xs font-semibold text-ink">{selectedLesson?.title || t('courseWizard.noLessonYet')}</p>
+            {contentLessons.length ? <Select value={selectedLesson?.id || ''} onChange={(event) => setLessonId(event.target.value)} className="h-8 w-full min-w-0 text-[11px] sm:w-auto sm:min-w-40">{contentLessons.map((lesson) => <option key={lesson.id} value={lesson.id}>{lesson.title || t('courseContent.untitledLesson')}</option>)}</Select> : null}
           </div>
           <div className="p-5">
             {selectedLesson ? <><p className="mb-4 text-xs leading-relaxed text-muted">{language === 'ar' ? selectedLesson.descriptionAr : selectedLesson.descriptionFr}</p><div className="space-y-4">{blocks.length ? blocks.map((block) => <LessonBlock key={block.id} block={block} />) : <EmptyState icon={FileText} title={t('courseContent.noBlocks')} description={t('courseContent.noBlocksDesc')} compact />}</div></> : <EmptyState icon={FileText} title={t('courseWizard.noLessonYet')} description={t('courseWizard.noLessonYetDesc')} compact />}
@@ -437,7 +437,7 @@ export function LessonEditor({ lessonId, onClose, onDeleted }) {
           <div className="rounded-xl border border-line border-brand bg-brand-soft">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-b border-line bg-surface/70 px-3 py-2">
               <span className="text-sm font-medium text-brand">{t('courseContent.lessonContent')}</span>
-              <Select value="" onChange={(event) => { if (event.target.value) { addBlock(lesson.id, event.target.value); success(t('courseContent.itemSaved')) } }} className="h-9 w-auto min-w-[200px] py-1.5 text-[11px] text-brand">
+              <Select value="" onChange={(event) => { if (event.target.value) { addBlock(lesson.id, event.target.value); success(t('courseContent.itemSaved')) } }} className="h-9 w-full min-w-0 py-1.5 text-[11px] text-brand sm:w-auto sm:min-w-[200px]">
                 <option value="">{t('courseContent.addBlock')}</option>
                 <option value="richtext">{t('courseContent.blockText')}</option>
                 <option value="video">{t('courseContent.blockVideo')}</option>
@@ -536,12 +536,12 @@ function QuizEditor({ quizDraft, setQuizDraft, addQuestion, updateQuestion, upda
           <div key={question.id} className="rounded-xl border border-line p-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="grid h-6 w-6 place-items-center rounded-lg bg-brand-soft text-[10px] font-bold text-brand">{questionIndex + 1}</span>
-              <Select value={question.type} onChange={(event) => updateQuestion(questionIndex, { type: event.target.value })} className="h-8 w-auto min-w-32 py-1 text-[11px]">
+              <Select value={question.type} onChange={(event) => updateQuestion(questionIndex, { type: event.target.value })} className="h-8 w-full min-w-0 py-1 text-[11px] sm:w-auto sm:min-w-32">
                 <option value="single">{t('courseContent.typeSingle')}</option>
                 <option value="multiple">{t('courseContent.typeMultiple')}</option>
                 <option value="boolean">{t('courseContent.typeTrueFalse')}</option>
               </Select>
-              <Input type="number" value={question.points} onChange={(event) => updateQuestion(questionIndex, { points: Number(event.target.value) })} className="h-8 w-20 py-1 text-[11px]" />
+              <Input type="number" value={question.points} onChange={(event) => updateQuestion(questionIndex, { points: Number(event.target.value) })} className="h-8 w-full min-w-0 py-1 text-[11px] sm:w-20" />
               <button type="button" onClick={() => removeQuestion(questionIndex)} className="ms-auto grid h-7 w-7 place-items-center rounded text-muted hover:bg-danger-soft hover:text-danger"><Trash2 size={13} /></button>
             </div>
             <Input value={question.title} onChange={(event) => updateQuestion(questionIndex, { title: event.target.value })} placeholder={t('courseContent.questionPlaceholder')} className="mt-2" />
@@ -554,9 +554,9 @@ function QuizEditor({ quizDraft, setQuizDraft, addQuestion, updateQuestion, upda
             ) : (
               <div className="mt-2 space-y-1.5">
                 {question.choices.map((choice, choiceIndex) => (
-                  <div key={choice.id} className="flex items-center gap-2">
-                    <input type={question.type === 'multiple' ? 'checkbox' : 'radio'} checked={Boolean(choice.correct)} onChange={() => markCorrect(questionIndex, choiceIndex)} className="h-3.5 w-3.5 accent-[var(--color-brand)]" />
-                    <Input value={choice.text} onChange={(event) => updateChoice(questionIndex, choiceIndex, { text: event.target.value })} placeholder={t('courseContent.answerPlaceholder', { number: choiceIndex + 1 })} className="h-8 py-1 text-[11px]" />
+                  <div key={choice.id} className="flex min-w-0 items-center gap-2">
+                    <input type={question.type === 'multiple' ? 'checkbox' : 'radio'} checked={Boolean(choice.correct)} onChange={() => markCorrect(questionIndex, choiceIndex)} className="h-3.5 w-3.5 shrink-0 accent-[var(--color-brand)]" />
+                    <Input value={choice.text} onChange={(event) => updateChoice(questionIndex, choiceIndex, { text: event.target.value })} placeholder={t('courseContent.answerPlaceholder', { number: choiceIndex + 1 })} className="h-8 min-w-0 py-1 text-[11px]" />
                     {question.choices.length > 2 ? <button type="button" onClick={() => updateQuestion(questionIndex, { choices: question.choices.filter((_, i) => i !== choiceIndex) })} className="grid h-7 w-7 shrink-0 place-items-center rounded text-muted hover:text-danger"><X size={12} /></button> : null}
                   </div>
                 ))}

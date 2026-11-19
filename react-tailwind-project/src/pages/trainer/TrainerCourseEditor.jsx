@@ -327,15 +327,15 @@ export default function TrainerCourseEditor() {
                   </div>
                   <div className="divide-y divide-line">
                     {sectionLessons.length ? sectionLessons.map((lesson, lessonIndex) => (
-                      <div key={lesson.id} className="flex items-center gap-2 px-3 py-2.5">
+                      <div key={lesson.id} className="flex flex-wrap items-center gap-2 px-3 py-2.5">
                         <GripVertical size={14} className="shrink-0 text-muted/50" />
                         <span className={cn('grid h-7 w-7 shrink-0 place-items-center rounded-lg', lesson.type === 'quiz' ? 'bg-purple-50 text-purple-600' : 'bg-brand-soft text-brand')}>
                           {lesson.type === 'quiz' ? <ListChecks size={13} /> : <FileText size={13} />}
                         </span>
                         <button type="button" onClick={() => setLessonTarget(lesson.id)} className="min-w-0 flex-1 truncate text-start text-xs font-medium text-ink hover:text-brand">{lesson.title || t('courseContent.untitledLesson')}</button>
-                        {lesson.preview ? <Badge tone="success">{t('courseContent.lessonFreePreview')}</Badge> : null}
+                        {lesson.preview ? <Badge tone="success" className="shrink-0">{t('courseContent.lessonFreePreview')}</Badge> : null}
                         <span className="hidden text-[10px] text-muted sm:block">{lesson.durationMin} min</span>
-                        <div className="flex gap-0.5">
+                        <div className="flex shrink-0 gap-0.5">
                           <button type="button" disabled={lessonIndex === 0} onClick={() => moveLesson(section.id, lesson.id, -1)} className="grid h-7 w-7 place-items-center rounded-md text-muted hover:bg-surface disabled:opacity-30"><ArrowUp size={12} /></button>
                           <button type="button" disabled={lessonIndex === sectionLessons.length - 1} onClick={() => moveLesson(section.id, lesson.id, 1)} className="grid h-7 w-7 place-items-center rounded-md text-muted hover:bg-surface disabled:opacity-30"><ArrowDown size={12} /></button>
                           <button type="button" onClick={() => success(t('courseContent.duplicateLesson')) || duplicateLesson(lesson.id)} className="grid h-7 w-7 place-items-center rounded-md text-muted hover:bg-surface"><Copy size={12} /></button>
@@ -554,7 +554,7 @@ function LessonEditor({ lessonId, onClose, onDeleted }) {
               <Select
                 value=""
                 onChange={(event) => { if (event.target.value) { addBlock(lesson.id, event.target.value); success(t('courseContent.itemSaved')) } }}
-                className="h-9 w-auto min-w-[200px] py-1.5 text-[11px] text-brand"
+                className="h-9 w-full min-w-0 py-1.5 text-[11px] text-brand sm:w-auto sm:min-w-[200px]"
               >
                 <option value="">{t('courseContent.addBlock')}</option>
                 <option value="richtext">{t('courseContent.blockText')}</option>
@@ -649,15 +649,15 @@ function QuizEditor({ quizDraft, setQuizDraft, addQuestion, updateQuestion, upda
         <div className="mt-4 space-y-3">
           {quizDraft.questions.map((question, questionIndex) => (
             <div key={question.id} className="rounded-xl border border-line bg-brand-soft p-3">
-              <div className="flex items-center gap-2">
-                <span className="grid h-6 w-6 place-items-center rounded-md bg-brand text-[10px] font-bold text-white">{questionIndex + 1}</span>
-                <Select value={question.type} onChange={(event) => updateQuestion(questionIndex, { type: event.target.value })} className="h-9 w-auto min-w-36 py-2 text-[12px] font-medium text-brand border border-line">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-brand text-[10px] font-bold text-white">{questionIndex + 1}</span>
+                <Select value={question.type} onChange={(event) => updateQuestion(questionIndex, { type: event.target.value })} className="h-9 w-full min-w-0 py-2 text-[12px] font-medium text-brand border border-line sm:w-auto sm:min-w-36">
                   <option value="single">{t('courseContent.typeSingle')}</option>
                   <option value="multiple">{t('courseContent.typeMultiple')}</option>
                   <option value="boolean">{t('courseContent.typeTrueFalse')}</option>
                 </Select>
-                <Input type="number" value={question.points} onChange={(event) => updateQuestion(questionIndex, { points: Number(event.target.value) })} className="h-9 w-24 py-2 text-[12px] font-medium text-brand border border-line ml-2" />
-                <button type="button" onClick={() => removeQuestion(questionIndex)} className="grid h-6 w-6 place-items-center rounded text-muted hover:bg-danger-soft hover:text-danger"><Trash2 size={13} /></button>
+                <Input type="number" value={question.points} onChange={(event) => updateQuestion(questionIndex, { points: Number(event.target.value) })} className="h-9 w-full min-w-0 py-2 text-[12px] font-medium text-brand border border-line sm:w-24" />
+                <button type="button" onClick={() => removeQuestion(questionIndex)} className="grid h-6 w-6 shrink-0 place-items-center rounded text-muted hover:bg-danger-soft hover:text-danger"><Trash2 size={13} /></button>
               </div>
               <Input value={question.title} onChange={(event) => updateQuestion(questionIndex, { title: event.target.value })} placeholder={t('courseContent.questionPlaceholder')} className="mt-2 form-input" />
               {question.type === 'boolean' ? (
@@ -669,10 +669,10 @@ function QuizEditor({ quizDraft, setQuizDraft, addQuestion, updateQuestion, upda
               ) : (
                 <div className="mt-2 space-y-1.5">
                   {question.choices.map((choice, choiceIndex) => (
-                    <div key={choice.id} className="flex items-center gap-2">
-                      <input type={question.type === 'multiple' ? 'checkbox' : 'radio'} checked={Boolean(choice.correct)} onChange={() => markCorrect(questionIndex, choiceIndex)} className="h-4 w-4 accent-[var(--color-brand)] border border-line rounded" />
-                      <Input value={choice.text} onChange={(event) => updateChoice(questionIndex, choiceIndex, { text: event.target.value })} placeholder={t('courseContent.answerPlaceholder', { number: choiceIndex + 1 })} className="h-9 w-full py-2 text-[12px] font-medium text-brand border border-line ml-2" />
-                      {question.choices.length > 2 ? <button type="button" onClick={() => updateQuestion(questionIndex, { choices: question.choices.filter((_, i) => i !== choiceIndex) })} className="grid h-6 w-6 place-items-center rounded text-muted hover:bg-danger-soft hover:text-danger"><X size={12} /></button> : null}
+                    <div key={choice.id} className="flex min-w-0 items-center gap-2">
+                      <input type={question.type === 'multiple' ? 'checkbox' : 'radio'} checked={Boolean(choice.correct)} onChange={() => markCorrect(questionIndex, choiceIndex)} className="h-4 w-4 shrink-0 accent-[var(--color-brand)] border border-line rounded" />
+                      <Input value={choice.text} onChange={(event) => updateChoice(questionIndex, choiceIndex, { text: event.target.value })} placeholder={t('courseContent.answerPlaceholder', { number: choiceIndex + 1 })} className="h-9 w-full min-w-0 py-2 text-[12px] font-medium text-brand border border-line ms-2" />
+                      {question.choices.length > 2 ? <button type="button" onClick={() => updateQuestion(questionIndex, { choices: question.choices.filter((_, i) => i !== choiceIndex) })} className="grid h-6 w-6 shrink-0 place-items-center rounded text-muted hover:bg-danger-soft hover:text-danger"><X size={12} /></button> : null}
                     </div>
                   ))}
                   <Button variant="primary" size="xs" icon={Plus} onClick={() => updateQuestion(questionIndex, { choices: [...question.choices, { id: `c-${Date.now()}`, text: '', correct: false }] })} className="mt-2 w-full">{t('courseContent.addAnswer')}</Button>

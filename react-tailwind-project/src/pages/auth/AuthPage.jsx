@@ -29,6 +29,8 @@ import { savePlanSelection } from '../../data/services.js'
 import { Alert, Badge, Button, Divider, Input, Label } from '../../components/ui.jsx'
 import { cn } from '../../lib/utils.js'
 
+const ArrowRightRtl = (props) => <ArrowRight {...props} className="rtl:rotate-180" />
+
 const teamDemoAccounts = [
   { id: 'u-admin', role: 'admin', name: 'Yasmine Tiwanza', email: 'admin@tiwanza.dz', icon: ShieldCheck, tone: 'bg-brand-soft text-brand border-brand/20' },
   { id: 'u-t1', role: 'trainer', name: 'Yacine Belkacem', email: 'yacine@nour-academy.dz', icon: GraduationCap, tone: 'bg-blue-50 text-blue-700 border-blue-200' },
@@ -242,7 +244,7 @@ export default function AuthPage({ mode = 'login', schoolScoped = false }) {
           <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-success-soft text-success"><BadgeCheck size={26} /></span>
           <h1 className="brand-font mt-4 text-xl font-bold text-ink">{t('auth.alreadyLoggedIn')}</h1>
           <p className="mt-1.5 text-xs leading-relaxed text-muted">{t('auth.alreadyLoggedInDesc')}</p>
-          <Button fullWidth className="mt-6" onClick={() => navigate(home || '/')} iconRight={ArrowRight}>
+          <Button fullWidth className="mt-6" onClick={() => navigate(home || '/')} iconRight={ArrowRightRtl}>
             {t('auth.home')}
           </Button>
         </div>
@@ -306,15 +308,15 @@ export default function AuthPage({ mode = 'login', schoolScoped = false }) {
       </div>
 
       <div className="flex flex-col">
-        <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4 lg:border-0">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-4 sm:gap-3 sm:px-5 lg:border-0">
           <Link to={schoolScoped ? `/s/${school.slug}` : '/'} className="inline-flex shrink-0 items-center gap-2 text-sm font-medium text-muted transition hover:text-ink">
             <ArrowLeft size={16} className="rtl:rotate-180" /> {t('common.back')}
           </Link>
-          <Link to={schoolScoped ? `/s/${school.slug}` : '/'} className="flex min-w-0 items-center gap-2 lg:hidden">
+          <Link to={schoolScoped ? `/s/${school.slug}` : '/'} className="flex shrink-0 items-center gap-2 lg:hidden">
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-white" style={{ background: school?.brandAccent || '#0D7A6A' }}>
               {schoolScoped && school.logo ? <img src={school.logo} alt="" className="h-full w-full rounded-xl object-cover" /> : <GraduationCap size={15} />}
             </span>
-            <span className="max-w-[140px] truncate text-xs font-bold text-ink">{schoolScoped ? school.name : 'Tiwanza'}</span>
+            <span className="hidden max-w-[140px] truncate text-xs font-bold text-ink sm:block">{schoolScoped ? school.name : 'Tiwanza'}</span>
           </Link>
           <button
             type="button"
@@ -328,7 +330,7 @@ export default function AuthPage({ mode = 'login', schoolScoped = false }) {
         <div className="flex flex-1 items-center justify-center px-4 py-8 sm:px-8">
           <div className="w-full max-w-md animate-fade-in">
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand">{schoolScoped ? t('auth.roleLearner') : t('auth.roleTrainer')}</p>
-            <h1 className="brand-font mt-2 text-2xl font-bold tracking-tight text-ink sm:text-3xl">{title}</h1>
+            <h1 className="brand-font mt-2 break-words text-2xl font-bold tracking-tight text-ink sm:text-3xl">{title}</h1>
             <p className="mt-1.5 text-sm leading-relaxed text-muted">{subtitle}</p>
 
             {schoolScoped ? (
@@ -455,7 +457,7 @@ export default function AuthPage({ mode = 'login', schoolScoped = false }) {
                         {demoLoading === account.id ? <Loader2 size={15} className="animate-spin text-brand" /> : <ArrowRight size={15} className="text-muted rtl:rotate-180" />}
                       </button>
                     ))}
-                    <p className="inline-flex items-center gap-1.5 px-1 pt-1 text-[10px] text-muted">
+                    <p className="inline-flex max-w-full flex-wrap items-center gap-1.5 px-1 pt-1 text-[10px] text-muted">
                       <KeyRound size={11} /> {t('auth.demoPasswordHint', { password: 'demo1234' })}
                     </p>
                     {!schoolScoped ? (
@@ -478,7 +480,7 @@ export default function AuthPage({ mode = 'login', schoolScoped = false }) {
 
       {forgotOpen ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-ink/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm animate-slide-up overflow-hidden rounded-2xl border border-line bg-white shadow-2xl">
+          <div className="thin-scroll max-h-[92vh] w-full max-w-sm animate-slide-up overflow-y-auto rounded-2xl border border-line bg-white shadow-2xl">
             <div className="h-1 w-full" style={{ background: school?.brandAccent || '#0D7A6A' }} />
             <div className="p-5">
             <div className="flex items-center gap-2.5">

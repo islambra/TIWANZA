@@ -135,8 +135,8 @@ export function AdminUsers() {
             <Tabs items={tabs} value={tab} onChange={setTab} variant="pill" className="border-0" />
             <SearchField value={query} onChange={setQuery} placeholder={t('adminUsers.searchPlaceholder')} className="w-full sm:w-72" />
           </div>
-          <div className="flex items-center gap-2">
-            <Select value={status} onChange={(event) => setStatus(event.target.value)} className="w-auto min-w-36">
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={status} onChange={(event) => setStatus(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-36">
               <option value="all">{t('adminUsers.allStatuses')}</option>
               <option value="active">{t('common.active')}</option>
               <option value="suspended">{t('common.suspended')}</option>
@@ -209,17 +209,17 @@ export function AdminUsers() {
       >
         {profileTarget ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-4 rounded-xl bg-surface p-4">
+            <div className="flex flex-wrap items-center gap-4 rounded-xl bg-surface p-4">
               <Avatar name={profileTarget.name} size="xl" tone={profileTarget.role === 'trainer' ? 'blue' : profileTarget.role === 'admin' ? 'purple' : 'brand'} />
               <div className="min-w-0 flex-1">
-                <p className="text-base font-bold text-ink">{profileTarget.name}</p>
-                <p className="text-xs text-muted">{profileTarget.email}</p>
-                <div className="mt-1.5 flex gap-1.5">
+                <p className="truncate text-base font-bold text-ink">{profileTarget.name}</p>
+                <p className="truncate text-xs text-muted">{profileTarget.email}</p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
                   <Badge tone={profileTarget.role === 'admin' ? 'purple' : profileTarget.role === 'trainer' ? 'blue' : 'brand'}>{t(`roles.${profileTarget.role}`)}</Badge>
                   <StatusPill status={profileTarget.status} t={t} />
                 </div>
               </div>
-              <a href={`mailto:${profileTarget.email}`}><Button variant="secondary" size="sm" icon={Mail}>{t('common.contact')}</Button></a>
+              <a href={`mailto:${profileTarget.email}`} className="shrink-0"><Button variant="secondary" size="sm" icon={Mail}>{t('common.contact')}</Button></a>
             </div>
 
             <div className="grid gap-3 rounded-xl border border-line p-4 text-xs sm:grid-cols-2">
@@ -364,22 +364,22 @@ export function AdminPlans() {
           return (
             <Card key={plan.id} className={cn('overflow-hidden', isBusiness && 'border-brand/30')}>
               <div className={cn('flex items-start justify-between gap-3 p-5', isBusiness ? 'bg-gradient-to-br from-brand-soft/80 to-white' : 'bg-surface/50')}>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-bold text-ink">{getPlanName(plan, language)}</h2>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="min-w-0 text-lg font-bold text-ink">{getPlanName(plan, language)}</h2>
                     <Badge tone={plan.enabled ? 'success' : 'neutral'} dot>{plan.enabled ? t('common.active') : t('common.inactive')}</Badge>
                     {plan.recommended ? <Badge tone="purple">{t('plans.recommended')}</Badge> : null}
                   </div>
                   <p className="mt-1 text-xs leading-relaxed text-muted">{getPlanDescription(plan, language)}</p>
-                  <div className="mt-3 flex items-end gap-1">
+                  <div className="mt-3 flex flex-wrap items-end gap-1">
                     <span className="brand-font text-3xl font-bold text-ink">{money(plan.priceDA)}</span>
                     <span className="pb-1 text-[11px] text-muted">{t('common.perMonth')}</span>
                   </div>
                 </div>
-                <span className={cn('grid h-11 w-11 place-items-center rounded-xl', isBusiness ? 'bg-brand text-white' : 'bg-white text-muted shadow-sm')}><Sparkles size={20} /></span>
+                <span className={cn('grid h-11 w-11 shrink-0 place-items-center rounded-xl', isBusiness ? 'bg-brand text-white' : 'bg-white text-muted shadow-sm')}><Sparkles size={20} /></span>
               </div>
 
-              <div className="grid grid-cols-3 divide-x divide-line border-y border-line text-center rtl:divide-x-reverse">
+              <div className="grid grid-cols-1 divide-y divide-line border-y border-line text-center sm:grid-cols-3 sm:divide-x sm:divide-y-0 rtl:sm:divide-x-reverse">
                 <div className="p-3">
                   <p className="text-[10px] text-muted">{t('adminPlans.activeSchools')}</p>
                   <p className="text-sm font-bold text-ink">{number(stats.count)}</p>
@@ -415,7 +415,7 @@ export function AdminPlans() {
                     )
                   })}
                 </div>
-                <div className="mt-4 flex gap-2">
+                <div className="mt-4 flex flex-wrap gap-2">
                   <Button variant="secondary" size="sm" icon={Pencil} onClick={() => startEdit(plan)}>{t('adminPlans.editPlan')}</Button>
                   <Button
                     variant={plan.enabled ? 'ghost' : 'soft'}

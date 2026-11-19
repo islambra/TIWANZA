@@ -532,8 +532,8 @@ export function AdminSupport() {
             <Tabs items={tabs} value={tab} onChange={setTab} variant="pill" className="border-0" />
             <SearchField value={query} onChange={setQuery} placeholder={t('adminSupport.searchPlaceholder')} className="w-full sm:w-72" />
           </div>
-          <div className="flex items-center gap-2">
-            <Select value={priority} onChange={(event) => setPriority(event.target.value)} className="w-auto min-w-36">
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={priority} onChange={(event) => setPriority(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-36">
               <option value="all">{t('adminSupport.allPriorities')}</option>
               <option value="low">{t('adminSupport.low')}</option>
               <option value="normal">{t('adminSupport.normal')}</option>
@@ -774,7 +774,7 @@ export function AdminActivity() {
       <Card>
         <div className="flex flex-col gap-2 border-b border-line p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <Select value={type} onChange={(event) => setType(event.target.value)} className="w-auto min-w-36">
+            <Select value={type} onChange={(event) => setType(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-36">
               <option value="all">{t('adminActivity.allTypes')}</option>
               <option value="schools">{t('adminActivity.schools')}</option>
               <option value="payments">{t('adminActivity.payments')}</option>

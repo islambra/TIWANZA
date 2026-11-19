@@ -42,6 +42,9 @@ import { Alert, Badge, Button, Card, Checkbox, Input, Label, Modal, ProgressBar,
 import PlanComparison from '../../components/PlanComparison.jsx'
 import { cn } from '../../lib/utils.js'
 
+const ArrowLeftRtl = (props) => <ArrowLeft {...props} className="rtl:rotate-180" />
+const ArrowRightRtl = (props) => <ArrowRight {...props} className="rtl:rotate-180" />
+
 const steps = ['account', 'school', 'plan', 'done']
 
 export default function OnboardingPage() {
@@ -313,12 +316,12 @@ export default function OnboardingPage() {
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-brand shadow-sm"><Icon size={15} /></span>
                       <div>
                         <p className="text-xs font-semibold text-ink">{title}</p>
-                        <p className="mt-0.5 text-[11px] text-muted">{desc}</p>
+                        <p className="mt-0.5 break-words text-[11px] text-muted">{desc}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-                <Button fullWidth size="lg" className="mt-5" onClick={goNext} iconRight={ArrowRight}>
+                <Button fullWidth size="lg" className="mt-5" onClick={goNext} iconRight={ArrowRightRtl}>
                   {t('common.continue')}
                 </Button>
               </Card>
@@ -370,7 +373,7 @@ export default function OnboardingPage() {
                         dir="ltr"
                         className="min-w-0 flex-1 border-0 bg-transparent px-3.5 py-2.5 text-sm text-ink focus:outline-none"
                       />
-                      <span className="flex items-center border-s border-line bg-surface px-2.5 text-[11px] font-medium text-muted" dir="ltr">.tiwanza.com</span>
+                      <span className="flex shrink-0 items-center border-s border-line bg-surface px-2.5 text-[11px] font-medium text-muted" dir="ltr">.tiwanza.com</span>
                     </div>
                     <p className="mt-1 text-[10px] text-muted">{t('onboarding.schoolSlugHint')}</p>
                     {slug ? (
@@ -439,21 +442,21 @@ export default function OnboardingPage() {
 
                   {error ? <Alert tone="danger">{error}</Alert> : null}
                   <div className="flex items-center justify-between gap-2 pt-1">
-                    <Button variant="ghost" onClick={() => setStep(1)} icon={ArrowLeft}>{t('common.back')}</Button>
-                    <Button onClick={goNext} loading={savingSchool} iconRight={ArrowRight}>{t('common.continue')}</Button>
+                    <Button variant="ghost" onClick={() => setStep(1)} icon={ArrowLeftRtl}>{t('common.back')}</Button>
+                    <Button onClick={goNext} loading={savingSchool} iconRight={ArrowRightRtl}>{t('common.continue')}</Button>
                   </div>
                 </div>
               </Card>
 
               <div className="space-y-4">
                 <Card className="overflow-hidden">
-                  <div className="flex items-center justify-between border-b border-line bg-surface/60 px-4 py-2.5">
-                    <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted"><Globe2 size={12} /> {t('onboarding.schoolPreview')}</span>
-                    <span className="rounded bg-white px-2 py-0.5 text-[9px] text-muted" dir="ltr">{slug || 'mon-ecole'}.tiwanza.com</span>
+                  <div className="flex min-w-0 items-center justify-between gap-2 border-b border-line bg-surface/60 px-4 py-2.5">
+                    <span className="inline-flex min-w-0 items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted"><Globe2 size={12} className="shrink-0" /><span className="truncate">{t('onboarding.schoolPreview')}</span></span>
+                    <span className="min-w-0 truncate rounded bg-white px-2 py-0.5 text-[9px] text-muted" dir="ltr">{slug || 'mon-ecole'}.tiwanza.com</span>
                   </div>
                   <div className="brand-gradient p-5 text-white">
                     <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/15 text-lg font-bold backdrop-blur">{name ? name.slice(0, 1).toUpperCase() : 'A'}</span>
-                    <h3 className="brand-font mt-3 text-lg font-bold">{name || t('onboarding.schoolNamePlaceholder')}</h3>
+                    <h3 className="brand-font mt-3 break-words text-lg font-bold">{name || t('onboarding.schoolNamePlaceholder')}</h3>
                     <p className="mt-1 line-clamp-3 text-[11px] leading-relaxed text-white/70">{description || t('onboarding.schoolDescriptionPlaceholder')}</p>
                     <div className="mt-4 flex gap-2">
                       <span className="rounded-md bg-white/15 px-2 py-1 text-[9px]">{t('publicSite.courses')}</span>
@@ -501,7 +504,7 @@ export default function OnboardingPage() {
               />
               {error ? <Alert tone="danger" className="mx-auto mt-4 max-w-3xl">{error}</Alert> : null}
               <div className="mx-auto mt-4 flex max-w-4xl flex-wrap items-center justify-between gap-3">
-                <Button variant="ghost" onClick={() => setStep(2)} icon={ArrowLeft}>{t('common.back')}</Button>
+                <Button variant="ghost" onClick={() => setStep(2)} icon={ArrowLeftRtl}>{t('common.back')}</Button>
                 <Button onClick={handleProceedPlan} disabled={!selectedPlanData} icon={CreditCard} size="lg">
                   {t('payments.choosePlan')}
                 </Button>
@@ -618,13 +621,13 @@ export default function OnboardingPage() {
         </div>
 
         <div className="mt-4 rounded-xl border border-line p-3">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted">{t('subscription.planLabel', { plan: language === 'ar' ? selectedPlanData?.nameAr || '' : selectedPlanData?.nameFr || '' })}</span>
-            <span className="font-semibold text-ink">{money(selectedPlanData?.priceDA || 0)}</span>
+          <div className="flex min-w-0 items-center justify-between gap-2 text-xs">
+            <span className="min-w-0 break-words text-muted">{t('subscription.planLabel', { plan: language === 'ar' ? selectedPlanData?.nameAr || '' : selectedPlanData?.nameFr || '' })}</span>
+            <span className="shrink-0 whitespace-nowrap font-semibold text-ink">{money(selectedPlanData?.priceDA || 0)}</span>
           </div>
-          <div className="mt-2 flex items-center justify-between border-t border-line pt-2 text-sm">
-            <span className="font-semibold text-ink">{t('subscription.totalDue')}</span>
-            <span className="brand-font font-bold text-brand">{money(selectedPlanData?.priceDA || 0)}</span>
+          <div className="mt-2 flex min-w-0 items-center justify-between gap-2 border-t border-line pt-2 text-sm">
+            <span className="min-w-0 break-words font-semibold text-ink">{t('subscription.totalDue')}</span>
+            <span className="brand-font shrink-0 whitespace-nowrap font-bold text-brand">{money(selectedPlanData?.priceDA || 0)}</span>
           </div>
         </div>
 

@@ -897,7 +897,7 @@ export function TrainerSubscription() {
         <Card>
           <CardHeader title={t('subscription.currentPlan')} description={t('trainer.planUsageDesc')} action={<StatusPill status={active ? 'active' : subscription?.status || 'pending'} t={t} />} />
           <div className="p-5">
-            <div className="flex items-center gap-4 rounded-xl bg-surface p-4"><span className="grid h-12 w-12 place-items-center rounded-xl bg-brand-soft text-brand"><ShieldCheck size={24} /></span><div className="min-w-0 flex-1"><p className="text-base font-bold text-ink">{planName(currentPlan) || '—'}</p><p className="text-xs text-muted">{planDescription(currentPlan) || t('subscription.paymentRequired')}</p></div><div className="text-end"><p className="text-lg font-bold text-ink">{money(currentPlan?.priceDA || 0)}</p><p className="text-[10px] text-muted">{t('subscription.perMonth')}</p></div></div>
+            <div className="flex flex-wrap items-center gap-3 rounded-xl bg-surface p-4 sm:gap-4"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand"><ShieldCheck size={24} /></span><div className="min-w-0 flex-1"><p className="truncate text-base font-bold text-ink">{planName(currentPlan) || '—'}</p><p className="truncate text-xs text-muted">{planDescription(currentPlan) || t('subscription.paymentRequired')}</p></div><div className="shrink-0 text-end"><p className="text-lg font-bold text-ink">{money(currentPlan?.priceDA || 0)}</p><p className="text-[10px] text-muted">{t('subscription.perMonth')}</p></div></div>
             <div className="mt-4 grid gap-3 sm:grid-cols-3"><InfoCell label={t('subscription.startDate')} value={subscription?.startedAt ? date(subscription.startedAt) : '—'} /><InfoCell label={active ? t('subscription.renewsOn') : t('subscription.endDate')} value={subscription?.endsAt ? date(subscription.endsAt) : '—'} /><InfoCell label={t('subscription.status')} value={remaining !== null ? t('subscription.daysRemaining', { count: remaining }) : t(`subscription.${subscription?.status || 'none'}`)} /></div>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">{usageRows.map((row) => <InfoCell key={row.label} label={row.label} value={row.limit === -1 || row.limit === null || row.limit === undefined ? `${row.used} / ${t('common.unlimited')}` : `${row.used} / ${row.limit}`} />)}</div>
           </div>
@@ -1061,9 +1061,9 @@ export function TrainerProfile() {
         <Card>
           <CardHeader title={t('common.profile')} description={t('onboarding.helpText')} />
           <div className="grid gap-4 p-5 sm:grid-cols-2">
-            <div className="flex items-center gap-3 rounded-xl border border-line bg-surface p-3 sm:col-span-2">
+            <div className="flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface p-3 sm:col-span-2">
               <Avatar name={user.name} size="lg" />
-              <div className="min-w-0"><p className="truncate text-sm font-semibold text-ink">{user.name}</p><p className="truncate text-xs text-muted">{user.email}</p><Badge tone="brand" className="mt-1">{t('roles.trainer')}</Badge></div>
+              <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-ink">{user.name}</p><p className="truncate text-xs text-muted">{user.email}</p><Badge tone="brand" className="mt-1">{t('roles.trainer')}</Badge></div>
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="profile-name">{t('learner.fullName')}</Label>

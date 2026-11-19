@@ -200,17 +200,17 @@ export default function TrainerCourses() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Select value={status} onChange={(event) => setStatus(event.target.value)} className="w-auto min-w-36">
+            <Select value={status} onChange={(event) => setStatus(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-36">
               <option value="all">{t('trainerCourses.allStatuses')}</option>
               <option value="published">{t('trainerCourses.statusPublished')}</option>
               <option value="draft">{t('trainerCourses.statusDraft')}</option>
               <option value="unpublished">{t('trainerCourses.statusArchived')}</option>
             </Select>
-            <Select value={category} onChange={(event) => setCategory(event.target.value)} className="w-auto min-w-36">
+            <Select value={category} onChange={(event) => setCategory(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-36">
               <option value="all">{t('trainerCourses.allCategories')}</option>
               {categories.map((item) => <option key={item} value={item}>{item}</option>)}
             </Select>
-            <Select value={sort} onChange={(event) => setSort(event.target.value)} className="w-auto min-w-36">
+            <Select value={sort} onChange={(event) => setSort(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-36">
               <option value="newest">{t('trainerCourses.sortNewest')}</option>
               <option value="name">{t('trainerCourses.sortName')}</option>
               <option value="students">{t('trainerCourses.sortStudents')}</option>

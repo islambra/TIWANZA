@@ -118,19 +118,19 @@ export default function AdminDashboard() {
           <div className="p-5">
             <div className="flex h-44 items-end gap-3 sm:gap-5">
               {buckets.map((bucket, index) => (
-                <div key={`${bucket.label}-${index}`} className="group flex h-full flex-1 flex-col items-center justify-end gap-2">
-                  <span className="text-[9px] font-semibold text-muted opacity-0 transition group-hover:opacity-100">{money(bucket.total)}</span>
+                <div key={`${bucket.label}-${index}`} className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
+                  <span className="max-w-full truncate text-[9px] font-semibold text-muted opacity-0 transition group-hover:opacity-100">{money(bucket.total)}</span>
                   <div className="relative flex w-full max-w-14 flex-1 items-end">
                     <div
                       className={cn('w-full rounded-t-lg transition-all duration-500', index === buckets.length - 1 ? 'bg-brand' : 'bg-brand/25 group-hover:bg-brand/40')}
                       style={{ height: `${Math.max(6, (bucket.total / maxBucket) * 100)}%` }}
                     />
                   </div>
-                  <span className="text-[10px] font-medium capitalize text-muted">{bucket.label}</span>
+                  <span className="max-w-full truncate text-[10px] font-medium capitalize text-muted">{bucket.label}</span>
                 </div>
               ))}
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-4">
+            <div className="mt-4 grid gap-2 border-t border-line pt-4 sm:grid-cols-3">
               <div>
                 <p className="text-[10px] text-muted">{t('admin.statActiveSubscriptions')}</p>
                 <p className="text-sm font-bold text-ink">{stats.activeSubscriptions}</p>
@@ -173,7 +173,7 @@ export default function AdminDashboard() {
             {!pendingPayments.length && !openSupport.length ? (
               <EmptyState compact icon={CheckCircle2} title={t('admin.noPendingActions')} description={t('admin.noPendingActionsDesc')} />
             ) : null}
-            <div className="grid grid-cols-2 gap-2 p-3">
+            <div className="grid gap-2 p-3 sm:grid-cols-2">
               <Link to="/admin/users"><Button variant="secondary" size="sm" fullWidth icon={Users}>{t('admin.manageUsers')}</Button></Link>
               <Link to="/admin/plans"><Button variant="secondary" size="sm" fullWidth icon={Sparkles}>{t('admin.viewPlans')}</Button></Link>
             </div>

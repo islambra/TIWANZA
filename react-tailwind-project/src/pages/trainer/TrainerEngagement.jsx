@@ -122,7 +122,7 @@ export function TrainerQuizzes() {
       <Card>
         <div className="flex flex-col gap-2 border-b border-line p-3 sm:flex-row sm:items-center sm:justify-between">
           <SearchField value={query} onChange={setQuery} placeholder={t('common.search')} className="w-full sm:w-72" />
-          <Select value={courseId} onChange={(event) => setCourseId(event.target.value)} className="w-auto min-w-44"><option value="all">{t('trainerQuizzes.allCourses')}</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}</Select>
+          <Select value={courseId} onChange={(event) => setCourseId(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-44"><option value="all">{t('trainerQuizzes.allCourses')}</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}</Select>
         </div>
         {grouped.length ? (
           <Table>
@@ -304,8 +304,8 @@ export function TrainerComments() {
         <div className="flex flex-col gap-2 border-b border-line p-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><SearchField value={query} onChange={setQuery} placeholder={t('trainerComments.searchPlaceholder')} className="w-full sm:w-80" /><Badge tone="neutral">{t('trainerComments.resultsCount', { count: rows.length })}</Badge></div>
           <div className="flex flex-wrap gap-2">
-            <Select value={courseId} onChange={(event) => setCourseId(event.target.value)} className="w-auto min-w-44"><option value="all">{t('trainerComments.allCourses')}</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}</Select>
-            <Select value={status} onChange={(event) => setStatus(event.target.value)} className="w-auto min-w-36"><option value="all">{t('trainerComments.allStatuses')}</option><option value="visible">{t('trainerComments.statusVisible')}</option><option value="hidden">{t('trainerComments.statusHidden')}</option><option value="reported">{t('common.reported') || 'Signalé'}</option></Select>
+            <Select value={courseId} onChange={(event) => setCourseId(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-44"><option value="all">{t('trainerComments.allCourses')}</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}</Select>
+            <Select value={status} onChange={(event) => setStatus(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-36"><option value="all">{t('trainerComments.allStatuses')}</option><option value="visible">{t('trainerComments.statusVisible')}</option><option value="hidden">{t('trainerComments.statusHidden')}</option><option value="reported">{t('common.reported') || 'Signalé'}</option></Select>
           </div>
         </div>
         {rows.length ? (

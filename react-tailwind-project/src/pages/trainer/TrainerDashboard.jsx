@@ -300,7 +300,7 @@ export default function TrainerDashboard() {
                 >
                   {series.map((item, index) => (
                     <div key={`${item.label}-${index}`} className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
-                      <span className="whitespace-nowrap text-[9px] font-semibold text-muted opacity-0 transition group-hover:opacity-100">{money(item.revenue)}</span>
+                      <span className="max-w-full truncate text-[9px] font-semibold text-muted opacity-0 transition group-hover:opacity-100">{money(item.revenue)}</span>
                       <div className="flex w-full flex-1 items-end">
                         <div className={cn('w-full rounded-t-lg transition-all duration-500', index === series.length - 1 ? 'bg-brand' : 'bg-brand/25 group-hover:bg-brand/40')} style={{ height: `${Math.max(4, (item.revenue / maxRevenue) * 100)}%` }} />
                       </div>
@@ -373,9 +373,9 @@ export default function TrainerDashboard() {
               <UsageRow label={t('adminPlans.maxCourses')} value={number(usage.courses)} limit={usage.limits.publishedCourses} text={limitText(usage.limits.publishedCourses)} />
               <UsageRow label={t('adminPlans.maxLearners')} value={number(usage.learners)} limit={usage.limits.learners} text={limitText(usage.limits.learners)} />
               <UsageRow label={t('limits.storage')} value={number(usage.storageUsedGb)} limit={usage.limits.storageGb} text={`${limitText(usage.limits.storageGb)} Go`} />
-              <div className="flex gap-2 pt-1">
-                <Link to="/trainer/subscription"><Button variant="soft" size="sm" fullWidth icon={Sparkles}>{t('trainer.upgradePlan')}</Button></Link>
-                <Link to="/trainer/subscription"><Button variant="secondary" size="sm" fullWidth>{t('trainer.renewPlan')}</Button></Link>
+              <div className="grid gap-2 pt-1 sm:grid-cols-2">
+                <Link to="/trainer/subscription" className="block"><Button variant="soft" size="sm" fullWidth icon={Sparkles}>{t('trainer.upgradePlan')}</Button></Link>
+                <Link to="/trainer/subscription" className="block"><Button variant="secondary" size="sm" fullWidth>{t('trainer.renewPlan')}</Button></Link>
               </div>
             </div>
           </Card>

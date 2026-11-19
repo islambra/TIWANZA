@@ -1896,11 +1896,13 @@ export function deleteAnnouncement(announcementId) {
 }
 
 export function markAnnouncementRead(announcementId, userId) {
+  const announcement = getState().announcements.find((item) => item.id === announcementId)
+  if (!announcement || (announcement.readBy || []).includes(userId)) return { ok: true }
   updateState((draft) => {
-    const announcement = draft.announcements.find((item) => item.id === announcementId)
-    if (announcement) {
-      announcement.readBy = announcement.readBy || []
-      if (!announcement.readBy.includes(userId)) announcement.readBy.push(userId)
+    const target = draft.announcements.find((item) => item.id === announcementId)
+    if (target) {
+      target.readBy = target.readBy || []
+      if (!target.readBy.includes(userId)) target.readBy.push(userId)
     }
   })
   return { ok: true }

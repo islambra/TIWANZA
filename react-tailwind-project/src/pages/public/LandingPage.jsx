@@ -74,7 +74,7 @@ export default function LandingPage() {
               <Sparkles size={13} />
               {t('landing.badge')}
             </Badge>
-            <h1 className="brand-font text-[38px] font-extrabold leading-[1.08] tracking-tight text-ink sm:text-5xl lg:text-[56px]">
+            <h1 className="brand-font break-words text-[38px] font-extrabold leading-[1.08] tracking-tight text-ink sm:text-5xl lg:text-[56px]">
               {t('landing.heroTitle')}{' '}
               <span className="relative inline-block">
                 <span className="relative z-10 text-brand">{t('landing.heroTitleAccent')}</span>
@@ -113,7 +113,7 @@ export default function LandingPage() {
                   <span className="h-2 w-2 rounded-full bg-amber-400" />
                   <span className="h-2 w-2 rounded-full bg-emerald-400" />
                 </div>
-                <span className="rounded-md bg-white px-2 py-0.5 text-[9px] font-medium text-muted">nour-academy.tiwanza.com</span>
+                <span className="min-w-0 truncate rounded-md bg-white px-2 py-0.5 text-[9px] font-medium text-muted">nour-academy.tiwanza.com</span>
                 <ShieldCheck size={13} className="text-brand" />
               </div>
               <div className="grid grid-cols-[72px_1fr]">
@@ -196,9 +196,9 @@ export default function LandingPage() {
         <div className="relative mx-auto w-full max-w-7xl px-4 pb-10 sm:px-6">
           <div className="grid grid-cols-2 gap-3 rounded-2xl border border-line bg-white/80 p-4 backdrop-blur sm:grid-cols-4 sm:p-5">
             {statItems.map((item) => (
-              <div key={item.label} className="text-center sm:text-start">
-                <p className="brand-font text-2xl font-bold text-ink sm:text-3xl">{item.value}</p>
-                <p className="mt-0.5 text-[11px] text-muted">{item.label}</p>
+              <div key={item.label} className="min-w-0 text-center sm:text-start">
+                <p className="brand-font break-words text-2xl font-bold text-ink sm:text-3xl">{item.value}</p>
+                <p className="mt-0.5 break-words text-[11px] text-muted">{item.label}</p>
               </div>
             ))}
           </div>
@@ -341,7 +341,7 @@ function FaqItem({ question, answer, defaultOpen }) {
   return (
     <Card className="overflow-hidden">
       <button type="button" onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between gap-4 px-4 py-3.5 text-start">
-        <span className="text-sm font-semibold text-ink">{question}</span>
+        <span className="min-w-0 break-words text-sm font-semibold text-ink">{question}</span>
         <ChevronDown size={16} className={`shrink-0 text-muted transition ${open ? 'rotate-180' : ''}`} />
       </button>
       {open ? <p className="border-t border-line px-4 py-3 text-xs leading-relaxed text-muted">{answer}</p> : null}

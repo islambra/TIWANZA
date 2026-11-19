@@ -133,11 +133,11 @@ export function TrainerLearners() {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <SearchField value={query} onChange={setQuery} placeholder={t('trainerLearners.searchPlaceholder')} className="w-full sm:w-72" />
             <div className="flex flex-wrap gap-2">
-              <Select value={courseId} onChange={(event) => setCourseId(event.target.value)} className="w-auto min-w-40">
+              <Select value={courseId} onChange={(event) => setCourseId(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-40">
                 <option value="all">{t('trainerLearners.allCourses')}</option>
                 {courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}
               </Select>
-              <Select value={status} onChange={(event) => setStatus(event.target.value)} className="w-auto min-w-36">
+              <Select value={status} onChange={(event) => setStatus(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-36">
                 <option value="all">{t('trainerLearners.allStatuses')}</option>
                 <option value="active">{t('trainerLearners.statusActive')}</option>
                 <option value="suspended">{t('trainerLearners.statusSuspended')}</option>
@@ -193,11 +193,11 @@ export function TrainerLearners() {
       <Modal open={Boolean(profileTarget)} onClose={() => setProfileTarget(null)} title={t('trainerLearners.learnerProfile')} size="lg" footer={<Button variant="secondary" onClick={() => setProfileTarget(null)}>{t('common.close')}</Button>}>
         {profileTarget ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 rounded-xl bg-surface p-4">
+            <div className="flex flex-wrap items-center gap-3 rounded-xl bg-surface p-4">
               <Avatar name={profileTarget.learner.name} size="lg" />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-ink">{profileTarget.learner.name}</p>
-                <p className="text-xs text-muted">{profileTarget.learner.email}</p>
+                <p className="truncate text-sm font-bold text-ink">{profileTarget.learner.name}</p>
+                <p className="truncate text-xs text-muted">{profileTarget.learner.email}</p>
               </div>
               <StatusPill status={profileTarget.learner.status} t={t} />
             </div>
@@ -288,7 +288,7 @@ export function TrainerEnrollments() {
       <Card>
         <div className="flex flex-col gap-2 border-b border-line p-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs items={[{ value: 'pending', label: t('trainerEnrollments.pending'), count: pending.length }, { value: 'all', label: t('trainerEnrollments.all'), count: state.coursePayments.filter((payment) => payment.schoolId === school.id).length }]} value={tab} onChange={setTab} variant="pill" className="border-0" />
-          <Select value={courseId} onChange={(event) => setCourseId(event.target.value)} className="w-auto min-w-44">
+          <Select value={courseId} onChange={(event) => setCourseId(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-44">
             <option value="all">{t('trainerEnrollments.allCourses')}</option>
             {courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}
           </Select>
@@ -360,7 +360,7 @@ function PaymentReceipt({ payment }) {
       <div className="rounded-xl border border-dashed border-line p-4">
         <p className="text-xs font-semibold text-ink">{t('trainerPayments.receipt')}</p>
         {payment.proofName ? (
-          <div className="mt-2 flex items-center gap-2 rounded-lg bg-surface p-2 text-[11px]"><FileIcon /> <span className="truncate">{payment.proofName}</span><Button variant="ghost" size="xs" icon={Eye} className="ms-auto" onClick={() => setProofOpen(true)}>{t('common.view')}</Button></div>
+          <div className="mt-2 flex items-center gap-2 rounded-lg bg-surface p-2 text-[11px]"><FileIcon /> <span className="min-w-0 flex-1 truncate">{payment.proofName}</span><Button variant="ghost" size="xs" icon={Eye} className="ms-auto shrink-0" onClick={() => setProofOpen(true)}>{t('common.view')}</Button></div>
         ) : <p className="mt-1 text-[11px] text-muted">{t('trainerEnrollments.noReceipt')}</p>}
       </div>
       {payment.rejectionReason ? <div className="rounded-xl bg-danger-soft p-3 text-[11px] text-danger"><strong>{t('trainerEnrollments.rejectReason')} : </strong>{payment.rejectionReason}</div> : null}
@@ -461,8 +461,8 @@ export function TrainerPayments() {
             <SearchField value={query} onChange={setQuery} placeholder={t('trainerPayments.searchPlaceholder')} className="w-full sm:w-72" />
           </div>
           <div className="flex flex-wrap gap-2">
-            <Select value={method} onChange={(event) => setMethod(event.target.value)} className="w-auto min-w-36"><option value="all">{t('trainerPayments.allMethods')}</option>{[...new Set(allRows.map((row) => displayPaymentMethod(row.payment)))].map((item) => <option key={item} value={item}>{t(paymentMethodLabelKey(item))}</option>)}</Select>
-            <Select value={courseId} onChange={(event) => setCourseId(event.target.value)} className="w-auto min-w-40"><option value="all">{t('trainerPayments.allCourses')}</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}</Select>
+            <Select value={method} onChange={(event) => setMethod(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-36"><option value="all">{t('trainerPayments.allMethods')}</option>{[...new Set(allRows.map((row) => displayPaymentMethod(row.payment)))].map((item) => <option key={item} value={item}>{t(paymentMethodLabelKey(item))}</option>)}</Select>
+            <Select value={courseId} onChange={(event) => setCourseId(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-40"><option value="all">{t('trainerPayments.allCourses')}</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}</Select>
             <Badge tone="neutral">{t('trainerPayments.resultsCount', { count: rows.length })}</Badge>
           </div>
         </div>
@@ -565,7 +565,7 @@ export function TrainerSales() {
 
   return (
     <div className="space-y-5">
-      <PageHeader eyebrow={t('nav.trainer')} title={t('trainerSales.title')} description={t('trainerSales.subtitle')} actions={<><Select value={period} onChange={(event) => setPeriod(event.target.value)} className="w-auto min-w-36"><option value="all">{t('trainerSales.allTime')}</option><option value="week">{t('trainerSales.thisWeek')}</option><option value="30days">{t('trainerSales.last30Days')}</option><option value="month">{t('trainerSales.thisMonth')}</option><option value="year">{t('trainerSales.thisYear')}</option></Select><Button variant="secondary" icon={Download} onClick={exportRows}>{t('trainerSales.exportCsv')}</Button></>} />
+      <PageHeader eyebrow={t('nav.trainer')} title={t('trainerSales.title')} description={t('trainerSales.subtitle')} actions={<><Select value={period} onChange={(event) => setPeriod(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-36"><option value="all">{t('trainerSales.allTime')}</option><option value="week">{t('trainerSales.thisWeek')}</option><option value="30days">{t('trainerSales.last30Days')}</option><option value="month">{t('trainerSales.thisMonth')}</option><option value="year">{t('trainerSales.thisYear')}</option></Select><Button variant="secondary" icon={Download} onClick={exportRows}>{t('trainerSales.exportCsv')}</Button></>} />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label={t('trainerSales.totalRevenue')} value={money(gross)} icon={Wallet} tone="success" />
         <StatCard label={t('trainerSales.netRevenue')} value={money(net)} icon={TrendingUp} tone="brand" />

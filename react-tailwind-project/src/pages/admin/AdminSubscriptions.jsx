@@ -286,7 +286,7 @@ export function AdminSubscriptions() {
           >
             {configureTarget ? (
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3 rounded-xl bg-surface p-3 text-xs">
+                <div className="grid gap-3 rounded-xl bg-surface p-3 text-xs sm:grid-cols-2">
                   <Detail label={t('adminSubscriptions.tableSchool')} value={configureTarget.school?.name || '—'} />
                   <Detail label={t('adminSubscriptions.tablePlan')} value={getPlanName(configureTarget.plan, language) || '—'} />
                   <Detail label={t('adminSubscriptions.tableAmount')} value={money(configureTarget.subscription?.amount || 0)} />
@@ -314,7 +314,7 @@ export function AdminSubscriptions() {
       >
         {approveTarget ? (
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3 rounded-xl bg-surface p-3 text-xs">
+            <div className="grid gap-3 rounded-xl bg-surface p-3 text-xs sm:grid-cols-2">
               <Detail label={t('adminSubscriptions.tableSchool')} value={approveTarget.school?.name || '—'} />
               <Detail label={t('adminSubscriptions.tablePlan')} value={getPlanName(approveTarget.plan, language) || '—'} />
               <Detail label={t('adminSubscriptions.tableAmount')} value={money(approveTarget.latestPayment?.amount || 0)} />

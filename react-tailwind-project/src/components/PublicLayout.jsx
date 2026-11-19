@@ -25,15 +25,15 @@ export default function PublicLayout() {
   ]
 
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="flex min-h-screen w-full max-w-full min-w-0 flex-col overflow-x-clip bg-white">
       <header className="sticky top-0 z-40 border-b border-line/80 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link to="/" className="flex items-center gap-2.5">
-            <span className="brand-gradient grid h-9 w-9 place-items-center rounded-xl text-white shadow-sm">
+        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6">
+          <Link to="/" className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+            <span className="brand-gradient grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white shadow-sm">
               <GraduationCap size={19} />
             </span>
-            <span>
-              <span className="brand-font block text-lg font-bold leading-none tracking-tight text-ink">Tiwanza</span>
+            <span className="min-w-0">
+              <span className="brand-font block truncate text-sm font-bold leading-none tracking-tight text-ink sm:text-lg">Tiwanza</span>
               <span className="mt-1 hidden text-[10px] font-medium uppercase tracking-[0.14em] text-muted sm:block">LMS Algérie</span>
             </span>
           </Link>
@@ -46,13 +46,22 @@ export default function PublicLayout() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-2">
-            <LanguageSwitcher variant="outline" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <LanguageSwitcher variant="outline" className="px-2 sm:px-2.5" />
             {isAuthenticated ? (
-              <Button size="sm" onClick={() => { window.location.href = home }} className="hidden sm:inline-flex">
-                {t('common.dashboard')}
-                <ArrowRight size={15} />
-              </Button>
+              <>
+                <Button
+                  size="xs"
+                  onClick={() => { window.location.href = home }}
+                  className="public-dashboard-button max-w-[96px]"
+                >
+                  {t('common.dashboard')}
+                </Button>
+                <Button size="sm" onClick={() => { window.location.href = home }} className="public-dashboard-desktop">
+                  {t('common.dashboard')}
+                  <ArrowRight size={15} />
+                </Button>
+              </>
             ) : (
               <>
                 <Link to="/login" className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface sm:block">
@@ -77,7 +86,7 @@ export default function PublicLayout() {
                 </a>
               ))}
               <div className="mt-2 grid gap-2">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2">
                   <Link to="/login"><Button variant="secondary" fullWidth size="sm">{t('landing.trainerLogin')}</Button></Link>
                   <Link to="/register"><Button fullWidth size="sm">{t('landing.trainerSignup')}</Button></Link>
                 </div>

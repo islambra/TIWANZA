@@ -367,7 +367,7 @@ export default function AppShell() {
   )
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen w-full max-w-full min-w-0 overflow-x-clip bg-surface">
       <aside
         className={cn(
           'fixed inset-y-0 start-0 z-40 hidden border-e border-line bg-white shadow-card transition-[width] duration-base lg:block',
@@ -378,9 +378,9 @@ export default function AppShell() {
       </aside>
 
       {mobileOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-50 overflow-hidden lg:hidden">
           <button type="button" aria-label={t('common.closeMenu')} className="absolute inset-0 bg-ink/35" onClick={() => setMobileOpen(false)} />
-          <div className="relative z-10 flex h-full w-[280px] animate-slide-start flex-col border-e border-line bg-white shadow-popover">
+          <div className="relative z-10 flex h-full w-[min(280px,calc(100vw-32px))] animate-slide-start flex-col start-0 border-e border-line bg-white shadow-popover">
             <div className="absolute end-2 top-2 z-10">
               <IconButton label={t('common.closeMenu')} onClick={() => setMobileOpen(false)} size="sm" className="focus-ring">
                 <X size={17} />
@@ -446,7 +446,7 @@ export default function AppShell() {
                     <div role="dialog" aria-label={t('common.notifications')} className="absolute end-0 top-full z-30 mt-2 w-[320px] max-w-[calc(100vw-24px)] animate-slide-up overflow-hidden rounded-card border border-line bg-white shadow-popover">
                       <div className="flex items-center justify-between border-b border-line px-4 py-3">
                         <p className="text-xs font-semibold text-ink">{t('common.notifications')}</p>
-                        <div className="flex items-center gap-1.5">
+            <div className="flex shrink-0 items-center gap-1.5">
                           <Badge tone="brand">{notifications.length}</Badge>
                           {notifications.length && isLearner ? (
                             <IconButton label={t('common.markAsRead')} onClick={markAllRead} size="sm" className="focus-ring">
@@ -504,7 +504,7 @@ export default function AppShell() {
                 {profileOpen ? (
                   <>
                     <button type="button" aria-label={t('common.closeDropdown')} className="fixed inset-0 z-20 cursor-default" onClick={() => setProfileOpen(false)} />
-                    <div className="absolute end-0 top-full z-30 mt-2 w-64 animate-slide-up overflow-visible rounded-card border border-line bg-white shadow-popover">
+                    <div className="absolute end-0 top-full z-30 mt-2 w-64 max-w-[calc(100vw-24px)] animate-slide-up overflow-hidden rounded-card border border-line bg-white shadow-popover">
                       <div className="border-b border-line px-4 py-3">
                         <p className="truncate text-sm font-semibold text-ink">{user.name}</p>
                         <p className="truncate text-[11px] text-muted">{user.email}</p>
@@ -544,7 +544,7 @@ export default function AppShell() {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 sm:py-7">
+        <main className="mx-auto w-full min-w-0 max-w-[1440px] px-4 py-5 sm:px-6 sm:py-7">
           <Outlet />
         </main>
       </div>

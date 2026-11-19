@@ -105,12 +105,12 @@ export function AdminSchools() {
       <Card>
         <div className="flex flex-wrap items-center gap-2 border-b border-line p-3">
           <SearchField value={query} onChange={setQuery} placeholder={t('adminSchools.searchPlaceholder')} className="w-full sm:w-72" />
-          <Select value={planFilter} onChange={(event) => setPlanFilter(event.target.value)} className="w-auto min-w-36">
+          <Select value={planFilter} onChange={(event) => setPlanFilter(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-36">
             <option value="all">{t('adminSchools.allPlans')}</option>
             <option value={PLAN_CODES.STARTER}>{getPlanName(starterPlan, language)}</option>
             <option value={PLAN_CODES.BUSINESS}>{getPlanName(businessPlan, language)}</option>
           </Select>
-          <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="w-auto min-w-36">
+          <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-36">
             <option value="all">{t('adminSchools.allStatuses')}</option>
             <option value="active">{t('common.active')}</option>
             <option value="pending">{t('common.pending')}</option>
@@ -304,13 +304,13 @@ export function AdminSchoolDetail() {
               </section>
               <section>
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{t('adminSchoolDetail.ownerInfo')}</h3>
-                <div className="mt-3 flex items-center gap-3 rounded-xl border border-line p-3">
+                <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-line p-3">
                   <Avatar name={owner?.name} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-semibold text-ink">{owner?.name}</p>
                     <p className="truncate text-[10px] text-muted">{owner?.email}</p>
                   </div>
-                  <a href={`mailto:${owner?.email}`}><Button variant="secondary" size="xs" icon={Mail}>{t('adminSchoolDetail.contactOwner')}</Button></a>
+                  <a href={`mailto:${owner?.email}`} className="shrink-0"><Button variant="secondary" size="xs" icon={Mail}>{t('adminSchoolDetail.contactOwner')}</Button></a>
                 </div>
               </section>
             </div>

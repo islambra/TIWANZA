@@ -17,10 +17,10 @@ const buttonVariants = {
 }
 
 const buttonSizes = {
-  xs: 'h-8 gap-1.5 rounded-lg px-2.5 text-xs',
-  sm: 'h-9 gap-2 rounded-lg px-3 text-sm',
-  md: 'h-10 gap-2 rounded-xl px-4 text-sm',
-  lg: 'h-12 gap-2.5 rounded-xl px-5 text-[15px]',
+  xs: 'min-h-8 gap-1.5 rounded-lg px-2.5 py-1.5 text-xs',
+  sm: 'min-h-9 gap-2 rounded-lg px-3 py-2 text-sm',
+  md: 'min-h-10 gap-2 rounded-xl px-4 py-2.5 text-sm',
+  lg: 'min-h-12 gap-2.5 rounded-xl px-5 py-3 text-[15px]',
 }
 
 export function Button({
@@ -45,7 +45,7 @@ export function Button({
         ? { type, disabled: isDisabled }
         : { 'aria-disabled': isDisabled || undefined })}
       className={cn(
-        'inline-flex items-center justify-center font-semibold transition focus-visible:outline-none focus-visible:ring-4 disabled:cursor-not-allowed',
+        'inline-flex min-w-0 max-w-full items-center justify-center break-words whitespace-normal font-semibold transition focus-visible:outline-none focus-visible:ring-4 disabled:cursor-not-allowed',
         buttonVariants[variant] || buttonVariants.primary,
         buttonSizes[size] || buttonSizes.md,
         fullWidth && 'w-full',
@@ -53,9 +53,9 @@ export function Button({
       )}
       {...props}
     >
-      {loading ? <Loader2 size={16} className="animate-spin" /> : Icon ? <Icon size={16} /> : null}
+      {loading ? <Loader2 size={16} className="shrink-0 animate-spin" /> : Icon ? <Icon size={16} className="shrink-0" /> : null}
       {children}
-      {IconRight ? <IconRight size={16} /> : null}
+      {IconRight ? <IconRight size={16} className="shrink-0" /> : null}
     </Component>
   )
 }
@@ -67,7 +67,7 @@ export function IconButton({ children, label, variant = 'ghost', size = 'md', cl
       aria-label={label}
       title={label}
       className={cn(
-        'inline-grid place-items-center rounded-lg transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/20 disabled:opacity-50',
+        'inline-grid shrink-0 place-items-center rounded-lg transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/20 disabled:opacity-50',
         variant === 'ghost' && 'text-muted hover:bg-surface hover:text-ink',
         variant === 'soft' && 'bg-brand-soft text-brand-dark hover:bg-brand-soft/75',
         variant === 'outline' && 'border border-line bg-white text-muted hover:text-ink',
@@ -97,12 +97,12 @@ export function Badge({ children, tone = 'neutral', dot = false, className }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold leading-5',
+        'inline-flex min-w-0 max-w-full items-center gap-1.5 break-words rounded-full border px-2.5 py-0.5 text-[11px] font-semibold leading-normal',
         badgeTones[tone] || badgeTones.neutral,
         className,
       )}
     >
-      {dot ? <span className="h-1.5 w-1.5 rounded-full bg-current" /> : null}
+      {dot ? <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" /> : null}
       {children}
     </span>
   )
@@ -110,7 +110,7 @@ export function Badge({ children, tone = 'neutral', dot = false, className }) {
 
 export function Card({ children, className, as: Tag = 'div', ...props }) {
   return (
-    <Tag className={cn('rounded-xl border border-line bg-white', className)} {...props}>
+    <Tag className={cn('min-w-0 max-w-full rounded-xl border border-line bg-white', className)} {...props}>
       {children}
     </Tag>
   )
@@ -120,8 +120,8 @@ export function CardHeader({ title, description, action, className }) {
   return (
     <div className={cn('flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-4', className)}>
       <div className="min-w-0">
-        <h3 className="text-sm font-semibold text-ink">{title}</h3>
-        {description ? <p className="mt-0.5 text-xs text-muted">{description}</p> : null}
+        <h3 className="break-words text-sm font-semibold text-ink">{title}</h3>
+        {description ? <p className="mt-0.5 break-words text-xs text-muted">{description}</p> : null}
       </div>
       {action}
     </div>
@@ -133,8 +133,8 @@ export function PageHeader({ title, description, actions, eyebrow, className }) 
     <div className={cn('flex flex-wrap items-end justify-between gap-4', className)}>
       <div className="min-w-0">
         {eyebrow ? <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-brand">{eyebrow}</p> : null}
-        <h1 className="brand-font text-2xl font-bold tracking-tight text-ink sm:text-[28px]">{title}</h1>
-        {description ? <p className="mt-1 max-w-2xl text-sm text-muted">{description}</p> : null}
+        <h1 className="brand-font break-words text-2xl font-bold tracking-tight text-ink sm:text-[28px]">{title}</h1>
+        {description ? <p className="mt-1 max-w-2xl break-words text-sm text-muted">{description}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
@@ -155,8 +155,8 @@ export function StatCard({ label, value, hint, icon: Icon, tone = 'brand', trend
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-xs font-medium text-muted">{label}</p>
-          <p className="mt-1.5 text-2xl font-bold tracking-tight text-ink">{value}</p>
-          {hint ? <p className="mt-1 text-[11px] text-muted">{hint}</p> : null}
+          <p className="mt-1.5 break-words text-2xl font-bold tracking-tight text-ink">{value}</p>
+          {hint ? <p className="mt-1 break-words text-[11px] text-muted">{hint}</p> : null}
         </div>
         {Icon ? (
           <span className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-xl', tones[tone] || tones.brand)}>
@@ -191,7 +191,7 @@ export function ProgressBar({ value = 0, tone = 'brand', size = 'md', showLabel 
           style={{ width: `${safe}%` }}
         />
       </div>
-      {showLabel ? <span className="w-9 text-end text-[11px] font-semibold text-muted">{safe}%</span> : null}
+      {showLabel ? <span className="w-9 shrink-0 text-end text-[11px] font-semibold text-muted">{safe}%</span> : null}
     </div>
   )
 }
@@ -239,11 +239,11 @@ export function Label({ children, htmlFor, required, hint, className }) {
 }
 
 const fieldBase =
-  'w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-muted/60 transition focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/10 disabled:bg-surface disabled:text-muted'
+  'w-full min-w-0 max-w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-muted/60 transition focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/10 disabled:bg-surface disabled:text-muted'
 
 export function Input({ className, icon: Icon, error, ...props }) {
   return (
-    <div className="relative">
+    <div className="relative min-w-0 w-full">
       {Icon ? <Icon size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-muted" /> : null}
       <input className={cn(fieldBase, Icon && 'ps-9', error && 'border-danger focus:border-danger focus:ring-danger/10', className)} {...props} />
     </div>
@@ -262,7 +262,7 @@ export function Textarea({ className, error, rows = 4, ...props }) {
 
 export function Select({ children, className, error, ...props }) {
   return (
-    <div className="relative">
+    <div className="relative min-w-0 w-full">
       <select className={cn(fieldBase, 'appearance-none pe-9', error && 'border-danger', className)} {...props}>
         {children}
       </select>
@@ -274,8 +274,8 @@ export function Select({ children, className, error, ...props }) {
 export function FieldError({ children }) {
   if (!children) return null
   return (
-    <p className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-danger">
-      <AlertCircle size={12} />
+    <p className="mt-1.5 flex items-center gap-1 break-words text-[11px] font-medium text-danger">
+      <AlertCircle size={12} className="shrink-0" />
       {children}
     </p>
   )
@@ -295,8 +295,8 @@ export function Checkbox({ checked, onChange, label, description, className, ...
         <Check size={11} strokeWidth={3} className="pointer-events-none absolute inset-0 m-auto text-white opacity-0 peer-checked:opacity-100" />
       </span>
       <span className="min-w-0">
-        <span className="block text-sm text-ink">{label}</span>
-        {description ? <span className="mt-0.5 block text-xs text-muted">{description}</span> : null}
+        <span className="block break-words text-sm text-ink">{label}</span>
+        {description ? <span className="mt-0.5 block break-words text-xs text-muted">{description}</span> : null}
       </span>
     </label>
   )
@@ -306,8 +306,8 @@ export function Switch({ checked, onChange, label, description, disabled, classN
   return (
     <label className={cn('flex cursor-pointer items-start justify-between gap-4', disabled && 'cursor-not-allowed opacity-60', className)}>
       <span className="min-w-0">
-        <span className="block text-sm font-medium text-ink">{label}</span>
-        {description ? <span className="mt-0.5 block text-xs text-muted">{description}</span> : null}
+        <span className="block break-words text-sm font-medium text-ink">{label}</span>
+        {description ? <span className="mt-0.5 block break-words text-xs text-muted">{description}</span> : null}
       </span>
       <span className="relative mt-0.5 inline-flex shrink-0">
         <input
@@ -379,14 +379,14 @@ export function Modal({ open, onClose, title, description, children, footer, siz
       >
         <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
           <div className="min-w-0">
-            <h2 id={titleId} className="text-base font-semibold text-ink">{title}</h2>
-            {description ? <p id={descriptionId} className="mt-0.5 text-xs leading-relaxed text-muted">{description}</p> : null}
+            <h2 id={titleId} className="break-words text-base font-semibold text-ink">{title}</h2>
+            {description ? <p id={descriptionId} className="mt-0.5 break-words text-xs leading-relaxed text-muted">{description}</p> : null}
           </div>
           <IconButton label={t('common.close')} onClick={onClose} size="sm">
             <X size={16} />
           </IconButton>
         </div>
-        <div className="thin-scroll max-h-[65vh] overflow-y-auto px-5 py-4">{children}</div>
+        <div className="thin-scroll min-w-0 max-h-[65vh] overflow-x-hidden overflow-y-auto break-words px-5 py-4">{children}</div>
         {footer ? <div className="flex flex-wrap justify-end gap-2 border-t border-line bg-surface/60 px-5 py-3">{footer}</div> : null}
       </div>
     </div>,
@@ -430,7 +430,7 @@ export function ConfirmDialog({
 
 export function Tabs({ items, value, onChange, className, variant = 'underline' }) {
   return (
-    <div role="tablist" className={cn('no-scrollbar flex overflow-x-auto', variant === 'underline' ? 'gap-1 border-b border-line' : 'gap-1 rounded-xl bg-surface p-1', className)}>
+    <div role="tablist" className={cn('no-scrollbar flex min-w-0 max-w-full overflow-x-auto', variant === 'underline' ? 'gap-1 border-b border-line' : 'gap-1 rounded-xl bg-surface p-1', className)}>
       {items.map((item) => {
         const active = item.value === value
         return (
@@ -468,7 +468,7 @@ export function Tabs({ items, value, onChange, className, variant = 'underline' 
 
 export function Table({ children, className }) {
   return (
-    <div className="table-wrap">
+    <div className="table-wrap min-w-0">
       <table className={cn('table-base', className)}>{children}</table>
     </div>
   )
@@ -480,8 +480,8 @@ export function EmptyState({ icon: Icon, title, description, action, className, 
       <span className="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-brand-soft text-brand">
         {Icon ? <Icon size={22} /> : <AlertCircle size={22} />}
       </span>
-      <h3 className="text-sm font-semibold text-ink">{title}</h3>
-      {description ? <p className="mt-1 max-w-sm text-xs leading-relaxed text-muted">{description}</p> : null}
+      <h3 className="break-words text-sm font-semibold text-ink">{title}</h3>
+      {description ? <p className="mt-1 max-w-sm break-words text-xs leading-relaxed text-muted">{description}</p> : null}
       {action ? <div className="mt-4">{action}</div> : null}
     </div>
   )
@@ -495,13 +495,13 @@ export function Alert({ title, children, tone = 'info', icon: Icon, className, a
     success: 'border-success/20 bg-success-soft text-success',
   }
   return (
-    <div role={tone === 'danger' ? 'alert' : 'status'} className={cn('flex items-start gap-3 rounded-xl border p-3.5 text-sm', tones[tone] || tones.info, className)}>
+    <div role={tone === 'danger' ? 'alert' : 'status'} className={cn('flex flex-wrap items-start gap-3 rounded-xl border p-3.5 text-sm', tones[tone] || tones.info, className)}>
       <span className="mt-0.5 shrink-0">{Icon ? <Icon size={17} /> : <AlertCircle size={17} />}</span>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 basis-0 break-words">
         {title ? <p className="font-semibold">{title}</p> : null}
-        <div className={cn('text-xs leading-relaxed', title && 'mt-0.5', tone === 'info' ? 'text-muted' : 'text-current/80')}>{children}</div>
+        <div className={cn('break-words text-xs leading-relaxed', title && 'mt-0.5', tone === 'info' ? 'text-muted' : 'text-current/80')}>{children}</div>
       </div>
-      {action}
+      {action ? <div className="min-w-0 max-w-full">{action}</div> : null}
     </div>
   )
 }
@@ -510,7 +510,7 @@ export function SearchField({ value, onChange, placeholder, className, 'aria-lab
   const { t } = useI18n()
   const resolvedPlaceholder = placeholder ?? t('common.searchPlaceholder')
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('relative min-w-0 w-full', className)}>
       <Search size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-muted" />
       <input
         value={value}
@@ -545,7 +545,7 @@ export function ActionMenu({ items, align = 'end', label = 'Actions' }) {
   }, [open])
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative min-w-0" ref={ref}>
       <IconButton
         label={label}
         onClick={() => setOpen((current) => !current)}
@@ -560,7 +560,7 @@ export function ActionMenu({ items, align = 'end', label = 'Actions' }) {
         <div
           role="menu"
           className={cn(
-            'absolute top-full z-30 mt-1 w-48 animate-fade-in overflow-hidden rounded-xl border border-line bg-white py-1 shadow-xl',
+            'absolute top-full z-30 mt-1 w-48 max-w-[calc(100vw-24px)] animate-fade-in overflow-hidden rounded-xl border border-line bg-white py-1 shadow-xl',
             align === 'end' ? 'end-0' : 'start-0',
           )}
         >
@@ -578,11 +578,11 @@ export function ActionMenu({ items, align = 'end', label = 'Actions' }) {
                   item.onClick?.()
                 }}
                 className={cn(
-                  'flex w-full items-center gap-2 px-3 py-2 text-start text-xs font-medium transition disabled:opacity-50',
+                  'flex w-full items-center gap-2 break-words px-3 py-2 text-start text-xs font-medium transition disabled:opacity-50',
                   item.tone === 'danger' ? 'text-danger hover:bg-danger-soft' : 'text-ink hover:bg-surface',
                 )}
               >
-                {item.icon ? <item.icon size={14} /> : null}
+                {item.icon ? <item.icon size={14} className="shrink-0" /> : null}
                 {item.label}
               </button>
             ),

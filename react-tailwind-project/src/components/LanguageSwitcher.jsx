@@ -59,7 +59,7 @@ export default function LanguageSwitcher({ variant = 'ghost', icon: Icon = Langu
   }
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative min-w-0" ref={containerRef}>
       {variant === 'row' ? (
         <button
           {...triggerProps}
@@ -95,7 +95,7 @@ export default function LanguageSwitcher({ variant = 'ghost', icon: Icon = Langu
         >
           <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2.5">
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-ink">{t('languageSwitcher.title')}</p>
+              <p className="break-words text-xs font-semibold text-ink">{t('languageSwitcher.title')}</p>
               <p className="mt-0.5 truncate text-[10px] text-muted">
                 {t('languageSwitcher.current')}: {t(current.key)}
               </p>

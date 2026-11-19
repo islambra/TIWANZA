@@ -63,14 +63,14 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed inset-x-3 bottom-3 z-[100] flex flex-col items-end gap-2 sm:inset-x-auto sm:end-4 sm:bottom-4 sm:w-[380px]">
+      <div className="pointer-events-none fixed inset-x-3 bottom-3 z-[100] flex max-w-[calc(100vw-24px)] flex-col items-end gap-2 sm:inset-x-auto sm:end-4 sm:bottom-4 sm:w-[380px]">
         {toasts.map((item) => {
           const Icon = toneIcons[item.tone] || Info
           return (
             <div
               key={item.id}
               className={cn(
-                'pointer-events-auto flex w-full animate-slide-up items-start gap-3 rounded-xl border bg-white p-3.5 shadow-lg shadow-black/5',
+                'pointer-events-auto flex w-full min-w-0 animate-slide-up items-start gap-3 break-words rounded-xl border bg-white p-3.5 shadow-lg shadow-black/5',
                 toneStyles[item.tone],
               )}
               role={item.tone === 'error' || item.tone === 'warning' ? 'alert' : 'status'}
@@ -79,13 +79,13 @@ export function ToastProvider({ children }) {
                 <Icon size={16} />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-ink">{item.title}</p>
-                {item.description ? <p className="mt-0.5 text-xs leading-relaxed text-muted">{item.description}</p> : null}
+                <p className="break-words text-sm font-semibold text-ink">{item.title}</p>
+                {item.description ? <p className="mt-0.5 break-words text-xs leading-relaxed text-muted">{item.description}</p> : null}
               </div>
               <button
                 type="button"
                 onClick={() => dismiss(item.id)}
-                className="rounded-md p-1 text-muted transition hover:bg-black/5 hover:text-ink"
+                className="shrink-0 rounded-md p-1 text-muted transition hover:bg-black/5 hover:text-ink"
                 aria-label={t('common.close')}
               >
                 <X size={14} />

@@ -92,6 +92,9 @@ import LanguageSwitcher from '../../components/LanguageSwitcher.jsx'
 import { paymentMethodDescriptionKey, paymentMethodLabelKey } from '../../data/paymentMethods.js'
 import { cn } from '../../lib/utils.js'
 
+const ArrowRightRtl = (props) => <ArrowRight {...props} className="rtl:rotate-180" />
+const ArrowUpRightRtl = (props) => <ArrowUpRight {...props} className="rtl:rotate-180" />
+
 function useSchoolPublic() {
   const { slug } = useParams()
   const state = useTiwanzaStore()
@@ -289,7 +292,7 @@ function SchoolHeader({ school }) {
         <div className="ms-auto flex items-center gap-2 lg:ms-2">
           <LanguageSwitcher variant="outline" icon={Globe2} />
           {schoolMember ? (
-            <Link to={home}><Button size="sm" icon={ArrowUpRight}>{t('publicSite.navMySpace')}</Button></Link>
+            <Link to={home}><Button size="sm" icon={ArrowUpRightRtl}>{t('publicSite.navMySpace')}</Button></Link>
           ) : (
             <div className="hidden items-center gap-1 rounded-xl border border-line bg-surface/60 p-1 sm:flex">
               <Link to={`/s/${school.slug}/login`}><Button variant="ghost" size="sm">{t('publicSite.navLogin')}</Button></Link>
@@ -321,7 +324,7 @@ function SchoolHeader({ school }) {
             </div>
             <div className="mt-4 grid gap-2 border-t border-line pt-4">
               {schoolMember ? (
-                <Link to={home} onClick={() => setMenuOpen(false)}><Button fullWidth size="sm" icon={ArrowUpRight}>{t('publicSite.navMySpace')}</Button></Link>
+                <Link to={home} onClick={() => setMenuOpen(false)}><Button fullWidth size="sm" icon={ArrowUpRightRtl}>{t('publicSite.navMySpace')}</Button></Link>
               ) : (
                 <>
                   <Link to={`/s/${school.slug}/login`} onClick={() => setMenuOpen(false)}><Button variant="secondary" fullWidth size="sm">{t('publicSite.navLogin')}</Button></Link>
@@ -395,7 +398,7 @@ function SchoolFooter({ school, trainer }) {
               <a href={`/s/${school.slug}/catalog`} className="inline-flex w-fit items-center gap-1.5 transition hover:text-white"><ChevronRight size={12} className="rtl:rotate-180" />{t('publicSite.navCourses')}</a>
               <a href={`/s/${school.slug}#about`} className="inline-flex w-fit items-center gap-1.5 transition hover:text-white"><ChevronRight size={12} className="rtl:rotate-180" />{t('publicSite.navAbout')}</a>
               <a href={`/s/${school.slug}#contact`} className="inline-flex w-fit items-center gap-1.5 transition hover:text-white"><ChevronRight size={12} className="rtl:rotate-180" />{t('publicSite.navContact')}</a>
-              <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="inline-flex w-fit items-center gap-1.5 transition hover:text-white"><ArrowUpRight size={12} />{t('publicSite.backToTop')}</button>
+              <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="inline-flex w-fit items-center gap-1.5 transition hover:text-white"><ArrowUpRight size={12} className="rtl:rotate-180" />{t('publicSite.backToTop')}</button>
             </div>
           </div>
           <div>
@@ -474,7 +477,7 @@ function SchoolCatalog({ state, school }) {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand">{t('publicSite.catalogEyebrow')}</p>
-          <h2 className="mt-2 brand-font text-2xl font-bold text-ink sm:text-3xl">{t('publicSite.coursesTitle')}</h2>
+          <h2 className="mt-2 brand-font break-words text-2xl font-bold text-ink sm:text-3xl">{t('publicSite.coursesTitle')}</h2>
           <p className="mt-1 text-sm text-muted">{t('publicSite.coursesSubtitle')}</p>
         </div>
         <Badge tone="neutral" dot>{t('publicSite.resultsCount', { count: rows.length })}</Badge>
@@ -573,7 +576,7 @@ export function SchoolHome() {
     <div className="min-h-screen bg-white">
       <SchoolHeader school={school} />
       <section
-        className="relative overflow-hidden px-4 py-16 text-white sm:py-24"
+        className="relative overflow-hidden py-16 text-white sm:py-24"
         style={{
           backgroundColor: '#0B2523',
           backgroundImage: `radial-gradient(circle at 85% 15%, ${school.brandAccent || '#0D7A6A'}66, transparent 38%), radial-gradient(circle at 10% 95%, #E8A33D26, transparent 34%), linear-gradient(135deg, #0B2523, #123B38)`,
@@ -594,11 +597,11 @@ export function SchoolHome() {
               {school.city ? <span className="inline-flex items-center gap-1 text-[11px] text-white/60"><MapPin size={12} />{school.city}</span> : null}
             </div>
             <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.24em] text-amber-300/90">{t('publicSite.heroEyebrow')}</p>
-            <h1 className="mt-3 max-w-2xl brand-font text-4xl font-bold leading-[1.06] tracking-tight sm:text-5xl lg:text-[3.4rem]">{t('publicSite.heroTitle', { school: school.name })}</h1>
+            <h1 className="mt-3 max-w-2xl brand-font break-words text-3xl font-bold leading-[1.06] tracking-tight sm:text-5xl lg:text-[3.4rem]">{t('publicSite.heroTitle', { school: school.name })}</h1>
             <p className="mt-5 max-w-xl text-sm leading-relaxed text-white/75 sm:text-base">{school.description}</p>
             <div className="mt-7 flex flex-wrap gap-3">
               <a href="#courses"><Button size="lg" variant="secondary" className="shadow-lg">{t('publicSite.heroCta')}<ArrowRight size={16} className="rtl:rotate-180" /></Button></a>
-              <a href="#about"><Button size="lg" variant="ghost" className="border border-white/25 text-white hover:bg-white/10">{t('publicSite.heroSecondary')}<ArrowUpRight size={15} /></Button></a>
+              <a href="#about"><Button size="lg" variant="ghost" className="border border-white/25 text-white hover:bg-white/10">{t('publicSite.heroSecondary')}<ArrowUpRight size={15} className="rtl:rotate-180" /></Button></a>
             </div>
             <div className="mt-9 flex flex-wrap gap-x-7 gap-y-3 border-t border-white/10 pt-6 text-xs text-white/70">
               <span className="flex flex-col"><strong className="text-xl text-white">{courses.length}</strong>{t('publicSite.statsCourses')}</span>
@@ -656,7 +659,7 @@ export function SchoolHome() {
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-brand"><Sparkles size={13} />{t('publicSite.heroBadge')}</p>
-                <h2 className="mt-2 brand-font text-2xl font-bold text-ink sm:text-3xl">{t('publicSite.featuredTitle')}</h2>
+                <h2 className="mt-2 brand-font break-words text-2xl font-bold text-ink sm:text-3xl">{t('publicSite.featuredTitle')}</h2>
                 <p className="mt-1 text-sm text-muted">{t('publicSite.featuredSubtitle')}</p>
               </div>
               <a href="#courses" className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-brand transition hover:bg-brand-soft">
@@ -677,7 +680,7 @@ export function SchoolHome() {
                 </div>
                 <div className="p-5 sm:p-8">
                   <div className="flex flex-wrap items-center gap-2"><Badge tone="brand" dot>{t('publicSite.featuredTitle')}</Badge><Badge tone="neutral">{levelLabel(t, featured.difficulty)}</Badge></div>
-                  <h3 className="mt-4 brand-font text-2xl font-bold leading-tight text-ink">{featured.title}</h3>
+                  <h3 className="mt-4 brand-font break-words text-2xl font-bold leading-tight text-ink">{featured.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted">{featured.shortDescription}</p>
                   {courseInstructor(state, school, featured) ? (
                     <div className="mt-4 flex items-center gap-2 text-[11px] text-muted"><Avatar name={courseInstructor(state, school, featured).name} size="sm" /><span className="font-semibold text-ink">{courseInstructor(state, school, featured).name}</span><span>· {t('publicSite.instructorRole')}</span></div>
@@ -705,7 +708,7 @@ export function SchoolHome() {
         <section id="about" className="scroll-mt-24 grid gap-6 border-y border-line bg-surface/30 py-14 sm:py-16 md:grid-cols-2">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand">{t('publicSite.navAbout')}</p>
-            <h2 className="mt-2 brand-font text-2xl font-bold text-ink sm:text-3xl">{t('publicSite.aboutTitle')}</h2>
+            <h2 className="mt-2 brand-font break-words text-2xl font-bold text-ink sm:text-3xl">{t('publicSite.aboutTitle')}</h2>
             <p className="mt-3 text-sm leading-relaxed text-muted">{school.description}</p>
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               {[
@@ -744,7 +747,7 @@ export function SchoolHome() {
         <section id="contact" className="scroll-mt-24 grid gap-6 py-14 sm:py-16 md:grid-cols-2">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand">{t('publicSite.navContact')}</p>
-            <h2 className="mt-2 brand-font text-2xl font-bold text-ink sm:text-3xl">{t('publicSite.contactTitle')}</h2>
+            <h2 className="mt-2 brand-font break-words text-2xl font-bold text-ink sm:text-3xl">{t('publicSite.contactTitle')}</h2>
             <p className="mt-1 text-sm text-muted">{t('publicSite.contactSubtitle')}</p>
             <div className="mt-5 space-y-3 text-xs text-muted">
               {school.contactEmail ? <a href={`mailto:${school.contactEmail}`} className="flex w-fit items-center gap-2.5 rounded-xl border border-line bg-white px-3 py-2.5 transition hover:border-brand/40"><Mail size={14} className="text-brand" /><span className="break-all">{school.contactEmail}</span></a> : null}
@@ -842,7 +845,7 @@ export function PublicCourseDetail() {
                 {course.isFree ? <Badge className="border-white/20 bg-white/90 text-ink">{t('publicSite.free')}</Badge> : null}
                 {courseRibbon(course, students) ? <Badge tone="warning" className="bg-white/90">{t(courseRibbon(course, students).key)}</Badge> : null}
               </div>
-              <h1 className="mt-4 max-w-3xl brand-font text-3xl font-bold leading-tight sm:text-4xl">{course.title}</h1>
+              <h1 className="mt-4 max-w-3xl brand-font break-words text-2xl font-bold leading-tight sm:text-4xl">{course.title}</h1>
               <p className="mt-3 max-w-3xl text-sm leading-relaxed text-white/70">{course.shortDescription}</p>
               <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-white/70">
                 <span className="flex items-center gap-1.5">{rating.count ? <><RatingStars value={rating.average} size={13} /><strong className="text-white">{rating.average}</strong><span>({t('publicSite.reviewsCount', { count: rating.count })})</span></> : <span>{t('publicSite.noRatings')}</span>}</span>
@@ -880,7 +883,7 @@ export function PublicCourseDetail() {
         </div>
       </nav>
 
-      <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8 pb-24 lg:grid-cols-[1fr_340px] lg:pb-8">
+      <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8 pb-32 lg:grid-cols-[1fr_340px] lg:pb-8">
         <div className="space-y-6">
           <Card id="overview" className="scroll-mt-36 overflow-hidden">
             <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${accent}, transparent 70%)` }} />
@@ -968,32 +971,32 @@ export function PublicCourseDetail() {
           <Card className="overflow-hidden shadow-[0_20px_50px_rgba(11,37,35,0.08)]"><div>
             <div className="h-1.5 w-full" style={{ background: `linear-gradient(90deg, ${accent}, ${accent}55)` }} />
             <div className="p-5">
-              <div className="flex items-end justify-between gap-2">
-                <div>
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted">{t('publicSite.oneTimePayment')}</p>
-                  <p className="mt-1 text-3xl font-bold leading-none text-ink">{course.isFree ? t('publicSite.free') : money(course.priceDA)}</p>
+                  <p className="mt-1 break-words text-3xl font-bold leading-none text-ink">{course.isFree ? t('publicSite.free') : money(course.priceDA)}</p>
                 </div>
-                <Badge tone="success"><ShieldCheck size={11} />{t('publicSite.securePayment')}</Badge>
+                <Badge tone="success" className="max-w-full"><ShieldCheck size={11} />{t('publicSite.securePayment')}</Badge>
               </div>
               {enrollment?.status === 'active' ? <Button fullWidth className="mt-5" size="lg" icon={PlayCircle} onClick={() => navigate(`/s/${school.slug}/learn/courses/${course.id}`)}>{t('publicSite.continueLearning')}</Button> : <Button fullWidth className="mt-5" size="lg" onClick={enroll}>{isAuthenticated ? (course.isFree ? t('publicSite.enrollFree') : t('publicSite.enrollNow')) : t('publicSite.loginToEnroll')}</Button>}
               {!isAuthenticated ? <p className="mt-2 text-center text-[10px] text-muted">{t('publicSite.loginPrompt')}</p> : null}
               <div className="mt-5 grid grid-cols-2 gap-2 rounded-xl bg-surface p-3 text-[10px] text-muted">
-                <span className="flex items-center gap-1.5"><Layers size={12} className="text-brand" />{t('publicSite.sectionsCount', { count: stats.sections })}</span>
-                <span className="flex items-center gap-1.5"><PlayCircle size={12} className="text-brand" />{t('publicSite.lessonsCount', { count: stats.lessons })}</span>
-                <span className="flex items-center gap-1.5"><Clock size={12} className="text-brand" />{formatDuration(duration)}</span>
-                <span className="flex items-center gap-1.5"><Globe2 size={12} className="text-brand" />{course.language === 'ar' ? 'العربية' : 'Français'}</span>
+                <span className="flex min-w-0 items-center gap-1.5"><Layers size={12} className="shrink-0 text-brand" />{t('publicSite.sectionsCount', { count: stats.sections })}</span>
+                <span className="flex min-w-0 items-center gap-1.5"><PlayCircle size={12} className="shrink-0 text-brand" />{t('publicSite.lessonsCount', { count: stats.lessons })}</span>
+                <span className="flex min-w-0 items-center gap-1.5"><Clock size={12} className="shrink-0 text-brand" />{formatDuration(duration)}</span>
+                <span className="flex min-w-0 items-center gap-1.5"><Globe2 size={12} className="shrink-0 text-brand" />{course.language === 'ar' ? 'العربية' : 'Français'}</span>
               </div>
               <div className="mt-5 space-y-2.5 border-t border-line pt-4 text-[11px] text-muted">
                 {[[ShieldCheck, t('publicSite.securePayment')], [PlayCircle, t('publicSite.includeAccess')], [FileText, t('publicSite.includeFiles')], [MessageSquare, t('publicSite.includeDiscussion')], [CheckCircle2, t('publicSite.includeCertificate')]].map(([Icon, label], index) => <p key={index} className="flex items-center gap-2"><Icon size={13} className="shrink-0 text-brand" />{label}</p>)}
               </div>
-              <Button fullWidth variant="secondary" className="mt-4" icon={ArrowUpRight} onClick={shareCourse}>{t('publicSite.shareCourse')}</Button>
+              <Button fullWidth variant="secondary" className="mt-4" icon={ArrowUpRightRtl} onClick={shareCourse}>{t('publicSite.shareCourse')}</Button>
             </div>
           </div></Card>
           <Card><div className="p-4 text-center">
             <span className="mx-auto grid h-9 w-9 place-items-center rounded-xl bg-brand-soft text-brand"><MessageSquare size={16} /></span>
             <p className="mt-2 text-xs font-bold text-ink">{t('publicSite.needHelp')}</p>
             <p className="mt-1 text-[10px] leading-relaxed text-muted">{t('publicSite.needHelpDesc')}</p>
-            {school.contactEmail ? <a href={`mailto:${school.contactEmail}`} className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-brand"><Mail size={12} />{school.contactEmail}</a> : null}
+            {school.contactEmail ? <a href={`mailto:${school.contactEmail}`} className="mt-2 inline-flex max-w-full items-center gap-1 break-all text-[11px] font-semibold text-brand"><Mail size={12} className="shrink-0" />{school.contactEmail}</a> : null}
           </div></Card>
         </aside>
       </main>
@@ -1002,15 +1005,15 @@ export function PublicCourseDetail() {
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 shadow-[0_-8px_24px_rgba(11,37,35,0.08)] backdrop-blur lg:hidden">
         <div className="h-0.5 w-full" style={{ background: accent }} />
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-          <div className="min-w-0 flex-1">
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-2.5 sm:flex-row sm:items-center sm:gap-3 sm:py-3">
+          <div className="min-w-0 w-full sm:w-auto sm:flex-1">
             <p className="truncate text-[10px] text-muted">{enrollment?.status === 'active' ? t('publicSite.continueLearning') : t('checkout.price')}</p>
-            <p className="text-lg font-bold leading-tight text-ink">{course.isFree ? t('publicSite.free') : money(course.priceDA)}</p>
+            <p className="break-words text-lg font-bold leading-tight text-ink">{course.isFree ? t('publicSite.free') : money(course.priceDA)}</p>
           </div>
           {enrollment?.status === 'active' ? (
-            <Button icon={PlayCircle} onClick={() => navigate(`/s/${school.slug}/learn/courses/${course.id}`)}>{t('publicSite.continueLearning')}</Button>
+            <Button fullWidth className="sm:w-auto" icon={PlayCircle} onClick={() => navigate(`/s/${school.slug}/learn/courses/${course.id}`)}>{t('publicSite.continueLearning')}</Button>
           ) : (
-            <Button iconRight={ArrowRight} onClick={enroll}>{isAuthenticated ? (course.isFree ? t('publicSite.enrollFree') : t('publicSite.enrollNow')) : t('publicSite.loginToEnroll')}</Button>
+            <Button fullWidth className="sm:w-auto" iconRight={ArrowRightRtl} onClick={enroll}>{isAuthenticated ? (course.isFree ? t('publicSite.enrollFree') : t('publicSite.enrollNow')) : t('publicSite.loginToEnroll')}</Button>
           )}
         </div>
       </div>
@@ -1065,14 +1068,14 @@ function ManualDetails({ method, manual, school, language, t }) {
     <div className="rounded-xl border border-line bg-surface p-4 text-xs">
       <p className="font-semibold text-ink">{t('checkout.bankDetails')}</p>
       <div className="mt-2 space-y-1.5">
-        {manual?.beneficiary ? <p className="flex justify-between gap-3"><span className="text-muted">{t('checkout.accountName')}</span><span className="text-end font-medium text-ink">{manual.beneficiary}</span></p> : null}
-        {method === 'ccp' || method === 'ccpRip' ? <p className="flex justify-between gap-3"><span className="text-muted">CCP / RIP</span><span className="text-end font-medium text-ink" dir="ltr">{manual?.ccp || manual?.rib}</span></p> : null}
-        {method === 'baridimob' ? <p className="flex justify-between gap-3"><span className="text-muted">BaridiMob</span><span className="text-end font-medium text-ink" dir="ltr">{manual?.baridimob}</span></p> : null}
+        {manual?.beneficiary ? <p className="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5"><span className="min-w-0 text-muted">{t('checkout.accountName')}</span><span className="min-w-0 break-words text-end font-medium text-ink">{manual.beneficiary}</span></p> : null}
+        {method === 'ccp' || method === 'ccpRip' ? <p className="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5"><span className="min-w-0 text-muted">CCP / RIP</span><span className="min-w-0 break-words text-end font-medium text-ink" dir="ltr">{manual?.ccp || manual?.rib}</span></p> : null}
+        {method === 'baridimob' ? <p className="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5"><span className="min-w-0 text-muted">BaridiMob</span><span className="min-w-0 break-words text-end font-medium text-ink" dir="ltr">{manual?.baridimob}</span></p> : null}
         {method === 'bankTransfer' ? (
           <>
-            <p className="flex justify-between gap-3"><span className="text-muted">{t('checkout.bankName')}</span><span className="text-end font-medium text-ink">{manual?.bank?.name}</span></p>
-            {manual?.bank?.agency ? <p className="flex justify-between gap-3"><span className="text-muted">{t('checkout.branch')}</span><span className="text-end font-medium text-ink">{manual.bank.agency}</span></p> : null}
-            <p className="flex justify-between gap-3"><span className="text-muted">{t('checkout.rib')}</span><span className="text-end font-medium text-ink" dir="ltr">{manual?.bank?.rib}</span></p>
+            <p className="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5"><span className="min-w-0 text-muted">{t('checkout.bankName')}</span><span className="min-w-0 break-words text-end font-medium text-ink">{manual?.bank?.name}</span></p>
+            {manual?.bank?.agency ? <p className="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5"><span className="min-w-0 text-muted">{t('checkout.branch')}</span><span className="min-w-0 break-words text-end font-medium text-ink">{manual.bank.agency}</span></p> : null}
+            <p className="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5"><span className="min-w-0 text-muted">{t('checkout.rib')}</span><span className="min-w-0 break-words text-end font-medium text-ink" dir="ltr">{manual?.bank?.rib}</span></p>
           </>
         ) : null}
       </div>
@@ -1239,7 +1242,7 @@ export function CourseCheckout() {
         <Link to={`/s/${school.slug}/courses/${course.id}`} className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted transition hover:text-brand"><ArrowLeft size={13} className="rtl:rotate-180" />{t('checkout.backToCourse')}</Link>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="brand-font text-2xl font-bold text-ink sm:text-3xl">{t('checkout.title')}</h1>
+            <h1 className="brand-font break-words text-2xl font-bold text-ink sm:text-3xl">{t('checkout.title')}</h1>
             <p className="mt-1 text-sm text-muted">{t('checkout.subtitle')}</p>
           </div>
           <Badge tone="brand"><ShieldCheck size={11} />{t('publicSite.securePayment')}</Badge>
@@ -1344,15 +1347,15 @@ export function CourseCheckout() {
                   <div className="min-w-0"><p className="line-clamp-2 text-xs font-bold text-ink">{course.title}</p><p className="mt-0.5 truncate text-[10px] text-muted">{school.name}</p><Badge tone="neutral" className="mt-1.5">{levelLabel(t, course.difficulty)}</Badge></div>
                 </div>
                 <div className="mt-5 space-y-2.5 border-t border-line pt-4 text-xs">
-                  <p className="flex justify-between gap-3"><span className="text-muted">{t('checkout.price')}</span><span className="font-semibold text-ink">{course.isFree ? t('publicSite.free') : money(course.priceDA)}</span></p>
-                  <p className="flex justify-between gap-3"><span className="text-muted">{t('checkout.discount')}</span><span className="text-ink">—</span></p>
-                  {selectedOption ? <p className="flex justify-between gap-3"><span className="text-muted">{t('payments.method')}</span><span className="text-end font-semibold text-ink">{t(paymentMethodLabelKey(selectedId))}</span></p> : null}
+                  <p className="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5"><span className="min-w-0 text-muted">{t('checkout.price')}</span><span className="min-w-0 break-words font-semibold text-ink">{course.isFree ? t('publicSite.free') : money(course.priceDA)}</span></p>
+                  <p className="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5"><span className="min-w-0 text-muted">{t('checkout.discount')}</span><span className="text-ink">—</span></p>
+                  {selectedOption ? <p className="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5"><span className="min-w-0 text-muted">{t('payments.method')}</span><span className="min-w-0 break-words text-end font-semibold text-ink">{t(paymentMethodLabelKey(selectedId))}</span></p> : null}
                 </div>
                 <div className="mt-5 rounded-2xl bg-brand-soft/60 p-4">
-                  <p className="flex items-center justify-between text-sm font-bold"><span>{t('checkout.total')}</span><span className="text-lg text-brand">{course.isFree ? t('publicSite.free') : money(course.priceDA)}</span></p>
+                  <p className="flex min-w-0 items-center justify-between gap-2 text-sm font-bold"><span className="min-w-0">{t('checkout.total')}</span><span className="shrink-0 whitespace-nowrap text-lg text-brand">{course.isFree ? t('publicSite.free') : money(course.priceDA)}</span></p>
                 </div>
                 {processing ? <p className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-medium text-brand"><Loader2 size={12} className="animate-spin" />{t('checkout.validating')}</p> : null}
-                <div className="mt-4 flex items-start gap-2 rounded-xl border border-line bg-surface/60 p-3 text-[10px] leading-relaxed text-muted"><ShieldCheck size={14} className="mt-0.5 shrink-0 text-brand" /><span>{t('checkout.securePaymentDesc')}</span></div>
+                <div className="mt-4 flex items-start gap-2 rounded-xl border border-line bg-surface/60 p-3 text-[10px] leading-relaxed text-muted"><ShieldCheck size={14} className="mt-0.5 shrink-0 text-brand" /><span className="min-w-0 break-words">{t('checkout.securePaymentDesc')}</span></div>
                 <p className="mt-3 text-[9px] leading-relaxed text-muted">{t('checkout.terms')}</p>
               </div>
             </Card>

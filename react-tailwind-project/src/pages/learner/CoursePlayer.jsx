@@ -51,6 +51,9 @@ import {
 import { LessonBlock } from '../../components/LessonContent.jsx'
 import { cn } from '../../lib/utils.js'
 
+const ArrowLeftRtl = (props) => <ArrowLeft {...props} className="rtl:rotate-180" />
+const ArrowRightRtl = (props) => <ArrowRight {...props} className="rtl:rotate-180" />
+
 export default function CoursePlayer() {
   const { courseId, lessonId, slug } = useParams()
   const learnBase = slug ? `/s/${slug}/learn` : '/learn'
@@ -165,12 +168,12 @@ export default function CoursePlayer() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={() => navigate(`${learnBase}/courses`)}>{t('learner.backToMyCourses')}</Button>
+        <div className="flex min-w-0 items-center gap-2">
+          <Button variant="ghost" size="sm" icon={ArrowLeftRtl} onClick={() => navigate(`${learnBase}/courses`)}>{t('learner.backToMyCourses')}</Button>
           <span className="hidden text-xs text-muted sm:inline">/</span>
           <Link to={`${learnBase}/courses/${course.id}`} className="hidden max-w-[240px] truncate text-xs font-semibold text-ink sm:inline">{course.title}</Link>
         </div>
-        <div className="flex items-center gap-3"><span className="text-[11px] text-muted">{t('learner.lessonsCompleted', { completed: progress.completed, total: progress.total })}</span><div className="w-28"><ProgressBar value={progress.percentage} size="sm" /></div><Badge tone="brand">{progress.percentage}%</Badge></div>
+        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3"><span className="min-w-0 text-[11px] text-muted">{t('learner.lessonsCompleted', { completed: progress.completed, total: progress.total })}</span><div className="w-20 sm:w-28"><ProgressBar value={progress.percentage} size="sm" /></div><Badge tone="brand">{progress.percentage}%</Badge></div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[300px_1fr]">
@@ -212,15 +215,15 @@ export default function CoursePlayer() {
               <Card>
                 <div className="border-b border-line p-5">
                   <div className="flex flex-wrap items-center gap-2"><Badge tone={activeLesson.type === 'quiz' ? 'purple' : 'brand'}>{activeLesson.type === 'quiz' ? t('learner.quizTitle') : t('learner.lessonContent')}</Badge>{activeLesson.durationMin ? <span className="text-[10px] text-muted">{activeLesson.durationMin} min</span> : null}{progress.completedLessonIds.includes(activeLesson.id) ? <Badge tone="success" dot>{t('learner.completedLabel')}</Badge> : null}</div>
-                  <h1 className="mt-2 text-xl font-bold text-ink">{activeLesson.title}</h1>
+                  <h1 className="mt-2 break-words text-xl font-bold text-ink">{activeLesson.title}</h1>
                 </div>
 
                 <div className="space-y-5 p-5">
                   {activeLesson.type === 'quiz' && quiz ? (
                     <div className="rounded-2xl border border-line bg-surface p-6 text-center">
                       <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-brand-soft text-brand"><Trophy size={26} /></span>
-                      <h2 className="mt-3 text-base font-bold text-ink">{quiz.title}</h2>
-                      <p className="mt-1 text-xs text-muted">{(language === 'ar' ? quiz.descriptionAr : quiz.descriptionFr) || t('learner.quizIntro')}</p>
+                      <h2 className="mt-3 break-words text-base font-bold text-ink">{quiz.title}</h2>
+                      <p className="mt-1 break-words text-xs text-muted">{(language === 'ar' ? quiz.descriptionAr : quiz.descriptionFr) || t('learner.quizIntro')}</p>
                       <div className="mt-4 flex flex-wrap justify-center gap-2"><Badge tone="neutral">{t('learner.quizQuestions', { count: quiz.questions.length })}</Badge><Badge tone="neutral">{t('learner.quizPassScore', { score: quiz.passingScore })}</Badge>{quiz.timeLimitMin ? <Badge tone="neutral">{t('learner.quizTimeLimit', { count: quiz.timeLimitMin })}</Badge> : null}{quiz.maxAttempts ? <Badge tone={attemptsLeft ? 'neutral' : 'warning'}>{t('learner.quizAttemptsLeft', { count: attemptsLeft })}</Badge> : <Badge tone="neutral">{t('learner.quizAttemptsUnlimited')}</Badge>}{bestAttempt ? <Badge tone={bestAttempt.passed ? 'success' : 'warning'}>{bestAttempt.percentage}%</Badge> : null}</div>
                       <Button className="mt-5" onClick={startQuiz} disabled={!quizAvailable}>{bestAttempt ? t('learner.retryQuiz') : t('learner.startQuiz')}</Button>
                       {!quizAvailable ? <p className="mt-2 text-[10px] text-danger">{t('learner.noAttemptsLeft')}</p> : null}
@@ -230,7 +233,7 @@ export default function CoursePlayer() {
                   {activeLesson.type !== 'quiz' ? (
                     <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4">
                       <Button variant={progress.completedLessonIds.includes(activeLesson.id) ? 'success' : 'soft'} icon={CheckCircle2} onClick={markComplete} disabled={progress.completedLessonIds.includes(activeLesson.id)}>{t('learner.markComplete')}</Button>
-                      <div className="flex gap-2">{prevLesson ? <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={() => openLesson(prevLesson)}>{t('learner.previousLesson')}</Button> : null}{nextLesson ? <Button variant="secondary" size="sm" iconRight={ArrowRight} onClick={() => openLesson(nextLesson)}>{t('learner.nextLesson')}</Button> : null}</div>
+                      <div className="flex flex-wrap gap-2">{prevLesson ? <Button variant="ghost" size="sm" icon={ArrowLeftRtl} onClick={() => openLesson(prevLesson)}>{t('learner.previousLesson')}</Button> : null}{nextLesson ? <Button variant="secondary" size="sm" iconRight={ArrowRightRtl} onClick={() => openLesson(nextLesson)}>{t('learner.nextLesson')}</Button> : null}</div>
                     </div>
                   ) : null}
                 </div>
@@ -238,9 +241,9 @@ export default function CoursePlayer() {
 
               {comments.length || course.commentsEnabled ? (
                 <Card>
-                  <div className="flex items-center gap-2 border-b border-line p-4"><MessageSquare size={16} className="text-brand" /><div className="flex-1"><p className="text-sm font-semibold text-ink">{t('learner.comments')}</p><p className="text-[10px] text-muted">{t('learner.commentsDesc')}</p></div><Badge tone="neutral">{comments.length}</Badge></div>
-                  {course.commentsEnabled ? <div className="border-b border-line p-4"><div className="flex gap-2"><Avatar name={user.name} size="sm" /><div className="flex-1"><Textarea rows={2} value={commentText} onChange={(event) => setCommentText(event.target.value)} placeholder={t('learner.commentPlaceholder')} /><div className="mt-2 flex justify-end"><Button size="sm" icon={Send} onClick={postComment}>{t('learner.postComment')}</Button></div></div></div></div> : null}
-                  {comments.length ? <div className="divide-y divide-line">{comments.map((comment) => { const author = state.users.find((item) => item.id === comment.userId); const isTrainer = author?.role === 'trainer'; return <div key={comment.id} className="flex gap-2.5 p-4"><Avatar name={author?.name} size="sm" /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-xs font-semibold text-ink">{author?.name}</p>{isTrainer ? <Badge tone="brand">{t('learner.trainerReply')}</Badge> : null}<span className="text-[9px] text-muted">{date(comment.createdAt)}</span></div><p className="mt-1 text-xs leading-relaxed text-muted">{comment.content}</p>{comment.userId === user.id ? <button type="button" onClick={() => removeComment(comment)} className="mt-1 inline-flex items-center gap-1 text-[10px] text-danger hover:underline"><Trash2 size={10} />{t('learner.deleteComment')}</button> : null}</div></div> })}</div> : <EmptyState icon={MessageSquare} title={t('learner.noComments')} description={t('learner.noCommentsDesc')} compact />}
+                  <div className="flex min-w-0 items-center gap-2 border-b border-line p-4"><MessageSquare size={16} className="shrink-0 text-brand" /><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-ink">{t('learner.comments')}</p><p className="text-[10px] text-muted">{t('learner.commentsDesc')}</p></div><Badge tone="neutral">{comments.length}</Badge></div>
+                  {course.commentsEnabled ? <div className="border-b border-line p-4"><div className="flex gap-2"><Avatar name={user.name} size="sm" /><div className="min-w-0 flex-1"><Textarea rows={2} value={commentText} onChange={(event) => setCommentText(event.target.value)} placeholder={t('learner.commentPlaceholder')} /><div className="mt-2 flex justify-end"><Button size="sm" icon={Send} onClick={postComment}>{t('learner.postComment')}</Button></div></div></div></div> : null}
+                  {comments.length ? <div className="divide-y divide-line">{comments.map((comment) => { const author = state.users.find((item) => item.id === comment.userId); const isTrainer = author?.role === 'trainer'; return <div key={comment.id} className="flex gap-2.5 p-4"><Avatar name={author?.name} size="sm" /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-xs font-semibold text-ink">{author?.name}</p>{isTrainer ? <Badge tone="brand">{t('learner.trainerReply')}</Badge> : null}<span className="text-[9px] text-muted">{date(comment.createdAt)}</span></div><p className="mt-1 break-words text-xs leading-relaxed text-muted">{comment.content}</p>{comment.userId === user.id ? <button type="button" onClick={() => removeComment(comment)} className="mt-1 inline-flex items-center gap-1 text-[10px] text-danger hover:underline"><Trash2 size={10} />{t('learner.deleteComment')}</button> : null}</div></div> })}</div> : <EmptyState icon={MessageSquare} title={t('learner.noComments')} description={t('learner.noCommentsDesc')} compact />}
                 </Card>
               ) : null}
             </>
@@ -257,10 +260,10 @@ export default function CoursePlayer() {
               <p className="mt-1 text-xs text-muted">{t('learner.scoreOf', { score: result.score, total: result.total })} · {result.percentage}%</p>
               <p className="text-[10px] text-muted">{t('learner.passThreshold', { score: result.passingScore })}</p>
             </div>
-            <div className="space-y-2">{quiz.questions.map((question, index) => { const detail = result.details.find((item) => item.questionId === question.id); const correctChoices = question.choices.filter((choice) => choice.correct); return <div key={question.id} className={cn('rounded-xl border p-3', detail?.correct ? 'border-success/30 bg-success-soft/30' : 'border-danger/30 bg-danger-soft/30')}><p className="text-xs font-semibold text-ink">{index + 1}. {question.title}</p><p className="mt-1 text-[11px] text-muted">{t('learner.correctAnswer')} : {correctChoices.map((choice) => choice.text).join(', ')}</p>{question.explanation ? <p className="mt-1 text-[10px] text-muted">{question.explanation}</p> : null}</div> })}</div>
+            <div className="space-y-2">{quiz.questions.map((question, index) => { const detail = result.details.find((item) => item.questionId === question.id); const correctChoices = question.choices.filter((choice) => choice.correct); return <div key={question.id} className={cn('rounded-xl border p-3', detail?.correct ? 'border-success/30 bg-success-soft/30' : 'border-danger/30 bg-danger-soft/30')}><p className="break-words text-xs font-semibold text-ink">{index + 1}. {question.title}</p><p className="mt-1 break-words text-[11px] text-muted">{t('learner.correctAnswer')} : {correctChoices.map((choice) => choice.text).join(', ')}</p>{question.explanation ? <p className="mt-1 break-words text-[10px] text-muted">{question.explanation}</p> : null}</div> })}</div>
           </div>
         ) : (
-          <div className="space-y-5"><div className="flex flex-wrap items-center gap-2"><Badge tone="neutral">{t('learner.quizQuestions', { count: quiz.questions.length })}</Badge><Badge tone="neutral">{t('learner.quizPassScore', { score: quiz.passingScore })}</Badge>{quiz.maxAttempts ? <span className="text-[10px] text-muted">{t('learner.quizAttemptsLeft', { count: attemptsLeft })}</span> : <span className="text-[10px] text-muted">{t('learner.quizAttemptsUnlimited')}</span>}{secondsLeft !== null ? <Badge tone={secondsLeft <= 60 ? 'warning' : 'neutral'}>{String(Math.floor(secondsLeft / 60)).padStart(2, '0')}:{String(secondsLeft % 60).padStart(2, '0')}</Badge> : null}</div>{quiz.questions.map((question, index) => <div key={question.id} className="rounded-xl border border-line p-4"><p className="text-sm font-semibold text-ink">{index + 1}. {question.title}</p><p className="mt-0.5 text-[10px] text-muted">{question.type === 'multiple' ? t('learner.selectAnswers') : t('learner.selectAnswer')} · {question.points} pts</p><div className="mt-3 space-y-2">{question.choices.map((choice) => { const selected = question.type === 'multiple' ? (answers[question.id] || []).includes(choice.id) : answers[question.id] === choice.id; return <button key={choice.id} type="button" onClick={() => toggleAnswer(question, choice.id)} className={cn('flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-start text-xs transition', selected ? 'border-brand bg-brand-soft text-brand-dark' : 'border-line text-muted hover:border-brand/40 hover:text-ink')}><span className={cn('grid h-4 w-4 shrink-0 place-items-center border', question.type === 'multiple' ? 'rounded' : 'rounded-full', selected ? 'border-brand bg-brand text-white' : 'border-line')}>{selected ? <Check size={10} /> : null}</span>{choice.text}</button> })}</div></div>)}</div>
+          <div className="space-y-5"><div className="flex flex-wrap items-center gap-2"><Badge tone="neutral">{t('learner.quizQuestions', { count: quiz.questions.length })}</Badge><Badge tone="neutral">{t('learner.quizPassScore', { score: quiz.passingScore })}</Badge>{quiz.maxAttempts ? <span className="text-[10px] text-muted">{t('learner.quizAttemptsLeft', { count: attemptsLeft })}</span> : <span className="text-[10px] text-muted">{t('learner.quizAttemptsUnlimited')}</span>}{secondsLeft !== null ? <Badge tone={secondsLeft <= 60 ? 'warning' : 'neutral'}>{String(Math.floor(secondsLeft / 60)).padStart(2, '0')}:{String(secondsLeft % 60).padStart(2, '0')}</Badge> : null}</div>{quiz.questions.map((question, index) => <div key={question.id} className="rounded-xl border border-line p-4"><p className="break-words text-sm font-semibold text-ink">{index + 1}. {question.title}</p><p className="mt-0.5 break-words text-[10px] text-muted">{question.type === 'multiple' ? t('learner.selectAnswers') : t('learner.selectAnswer')} · {question.points} pts</p><div className="mt-3 space-y-2">{question.choices.map((choice) => { const selected = question.type === 'multiple' ? (answers[question.id] || []).includes(choice.id) : answers[question.id] === choice.id; return <button key={choice.id} type="button" onClick={() => toggleAnswer(question, choice.id)} className={cn('flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-start text-xs transition', selected ? 'border-brand bg-brand-soft text-brand-dark' : 'border-line text-muted hover:border-brand/40 hover:text-ink')}><span className={cn('grid h-4 w-4 shrink-0 place-items-center border', question.type === 'multiple' ? 'rounded' : 'rounded-full', selected ? 'border-brand bg-brand text-white' : 'border-line')}>{selected ? <Check size={10} /> : null}</span><span className="min-w-0 break-words">{choice.text}</span></button> })}</div></div>)}</div>
         )}
       </Modal>
     </div>

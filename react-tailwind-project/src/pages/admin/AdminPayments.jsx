@@ -222,14 +222,14 @@ export function AdminPayments() {
             <SearchField value={query} onChange={setQuery} placeholder={t('adminPayments.searchPlaceholder')} className="w-full sm:w-72" />
           </div>
           <div className="flex flex-wrap gap-2">
-            <Select value={status} onChange={(event) => setStatus(event.target.value)} className="w-auto min-w-36" aria-label={t('adminPayments.filterStatus')}>
+            <Select value={status} onChange={(event) => setStatus(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-36" aria-label={t('adminPayments.filterStatus')}>
               <option value="all">{t('adminPayments.allStatuses')}</option>
               <option value="validated">{t('common.approved')}</option>
               <option value="pending">{t('common.pending')}</option>
               <option value="rejected">{t('common.rejected')}</option>
               <option value="refunded">{t('payments.refunded')}</option>
             </Select>
-            <Select value={method} onChange={(event) => setMethod(event.target.value)} className="w-auto min-w-36" aria-label={t('adminPayments.filterMethod')}>
+            <Select value={method} onChange={(event) => setMethod(event.target.value)} className="w-full min-w-0 sm:w-auto sm:min-w-36" aria-label={t('adminPayments.filterMethod')}>
               <option value="all">{t('adminPayments.allMethods')}</option>
               {METHOD_FILTERS.map((item) => (
                 <option key={item} value={item}>{t(paymentMethodLabelKey(item))}</option>
@@ -341,7 +341,7 @@ export function AdminPayments() {
               )}
             </div>
             {detail.kind === 'course' ? (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl bg-brand-soft/60 p-3">
                   <p className="text-[10px] text-muted">{t('adminPayments.platformRevenue')}</p>
                   <p className="mt-1 text-sm font-bold text-brand">{money(Math.round(detail.amount * commissionRate / 100))}</p>

@@ -65,6 +65,8 @@ import { displayPaymentMethod, paymentMethodLabelKey } from '../../data/paymentM
 import { StatusPill } from '../admin/AdminDashboard.jsx'
 import { cn } from '../../lib/utils.js'
 
+const ArrowRightRtl = (props) => <ArrowRight {...props} className="rtl:rotate-180" />
+
 function useLearner() {
   const { user } = useAuth()
   const { slug } = useParams()
@@ -115,7 +117,7 @@ function SchoolCourseCard({ course, state }) {
       </div>
       <div className="flex items-center justify-between gap-2 p-3">
         <span className="inline-flex min-w-0 items-center gap-2 text-[10px] text-muted"><BookOpen size={11} />{t('publicSite.lessonsCount', { count: getCourseLessons(state, course.id).length })}{rating.count ? <><Star size={11} className="text-amber-500" />{rating.average}</> : null}</span>
-        <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-brand group-hover:underline">{t('publicSite.viewCourse')}<ArrowRight size={11} /></span>
+        <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-brand group-hover:underline">{t('publicSite.viewCourse')}<ArrowRight size={11} className="rtl:rotate-180" /></span>
       </div>
     </Link>
   )
@@ -130,7 +132,7 @@ function AvailableCoursesPanel({ state, user, courses, limit = 3 }) {
   const { catalog: catalogHref } = catalogLinks(state, user.schoolId)
   return (
     <Card>
-      <CardHeader title={t('learner.availableCourses')} description={t('learner.availableCoursesDesc')} action={<Link to={catalogHref} className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand hover:underline">{t('learner.browseCourses')}<ArrowRight size={12} /></Link>} />
+      <CardHeader title={t('learner.availableCourses')} description={t('learner.availableCoursesDesc')} action={<Link to={catalogHref} className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand hover:underline">{t('learner.browseCourses')}<ArrowRight size={12} className="rtl:rotate-180" /></Link>} />
       <div className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-3">{available.slice(0, limit || available.length).map((course) => <SchoolCourseCard key={course.id} course={course} state={state} />)}</div>
     </Card>
   )
@@ -263,7 +265,7 @@ function CourseCard({ item, learnBase }) {
         <ProgressBar value={item.progress.percentage} size="sm" tone={item.progress.percentage === 100 ? 'success' : 'brand'} className="mt-1.5" />
         <div className="mt-auto pt-4">
           <Link to={`${learnBase}/courses/${item.course.id}`} className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-soft px-3 py-2 text-[11px] font-semibold text-brand-dark transition hover:bg-brand-soft/70">
-            {t('learner.continueCourse')}<ArrowRight size={12} />
+            {t('learner.continueCourse')}<ArrowRight size={12} className="rtl:rotate-180" />
           </Link>
         </div>
       </div>
@@ -322,7 +324,7 @@ export function LearnerDashboard() {
                       <p className="mt-0.5 truncate text-[10px] text-muted">{nextLesson ? `${t('learner.nextLesson')}: ${nextLesson.title}` : item.course.category}</p>
                       <div className="mt-2 flex items-center gap-2"><ProgressBar value={item.progress.percentage} size="sm" className="flex-1" /><span className="whitespace-nowrap text-[10px] text-muted">{t('learner.lessonsCompleted', { completed: item.progress.completed, total: item.progress.total })}</span></div>
                     </div>
-                    <Link to={`${learnBase}/courses/${item.course.id}`}><Button size="xs" variant="soft" iconRight={ArrowRight}>{t('learner.resumeCourse')}</Button></Link>
+                    <Link to={`${learnBase}/courses/${item.course.id}`}><Button size="xs" variant="soft" iconRight={ArrowRightRtl}>{t('learner.resumeCourse')}</Button></Link>
                   </div>
                 )
               })}
@@ -339,7 +341,7 @@ export function LearnerDashboard() {
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader title={t('learner.upcomingEvents')} description={t('learner.upcomingEventsDesc')} action={<Link to={`${learnBase}/calendar`} className="text-[11px] font-semibold text-brand hover:underline">{t('learner.viewCalendar')}</Link>} />
-          {events.length ? <div className="divide-y divide-line">{events.map((event) => { const course = event.courseId ? getCourse(state, event.courseId) : null; return <div key={event.id} className="flex items-center gap-3 px-4 py-3"><div className="flex w-11 shrink-0 flex-col items-center rounded-lg border border-line py-1"><span className="text-[8px] uppercase text-muted">{new Date(event.startAt).toLocaleDateString('fr-FR', { month: 'short' })}</span><span className="text-sm font-bold leading-none text-ink">{new Date(event.startAt).getDate()}</span></div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-ink">{event.title}</p><p className="text-[10px] text-muted">{new Date(event.startAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} · {course?.title || event.type}</p></div>{event.joinUrl ? <a href={event.joinUrl} target="_blank" rel="noreferrer"><Button size="xs" variant="soft">{t('learner.joinEvent')}</Button></a> : null}</div> })}</div> : <EmptyState icon={CalendarDays} title={t('learner.noEvents')} description={t('learner.noEventsDesc')} compact />}
+          {events.length ? <div className="divide-y divide-line">{events.map((event) => { const course = event.courseId ? getCourse(state, event.courseId) : null; return <div key={event.id} className="flex items-center gap-3 px-4 py-3"><div className="flex w-11 shrink-0 flex-col items-center rounded-lg border border-line py-1"><span className="text-[8px] uppercase text-muted">{new Date(event.startAt).toLocaleDateString('fr-FR', { month: 'short' })}</span><span className="text-sm font-bold leading-none text-ink">{new Date(event.startAt).getDate()}</span></div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-ink">{event.title}</p><p className="break-words text-[10px] text-muted">{new Date(event.startAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} · {course?.title || event.type}</p></div>{event.joinUrl ? <a href={event.joinUrl} target="_blank" rel="noreferrer"><Button size="xs" variant="soft">{t('learner.joinEvent')}</Button></a> : null}</div> })}</div> : <EmptyState icon={CalendarDays} title={t('learner.noEvents')} description={t('learner.noEventsDesc')} compact />}
         </Card>
 
         <Card>
@@ -418,15 +420,17 @@ export function LearnerAnnouncements() {
   const isUnread = (item) => !(item.readBy || []).includes(user.id)
   const rows = tab === 'unread' ? announcements.filter(isUnread) : announcements
 
-  useEffect(() => { if (current) markAnnouncementRead(current.id, user.id) }, [current, user.id])
+  useEffect(() => {
+    if (current && !(current.readBy || []).includes(user.id)) markAnnouncementRead(current.id, user.id)
+  }, [current, user.id])
 
   if (activeId) {
     if (!current) return <EmptyState icon={Megaphone} title={t('learner.noAnnouncements')} description={t('learner.noAnnouncementsDesc')} action={<Button onClick={() => navigate(announcementsBase)}>{t('learner.backToAnnouncements')}</Button>} />
     const course = current.courseId ? getCourse(state, current.courseId) : null
     return (
       <div className="mx-auto max-w-3xl space-y-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate(announcementsBase)}>← {t('learner.backToAnnouncements')}</Button>
-        <Card><div className="p-6"><div className="flex flex-wrap items-center gap-2"><Badge tone="brand">{course?.title || t('publicSite.allCourses')}</Badge><span className="text-[11px] text-muted">{t('learner.publishedOn')} {date(current.publishedAt || current.createdAt)}</span></div><h1 className="mt-3 text-xl font-bold text-ink">{current.title}</h1><p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-muted">{current.content}</p></div></Card>
+        <Button variant="ghost" size="sm" onClick={() => navigate(announcementsBase)}><span className="inline-block rtl:rotate-180">←</span> {t('learner.backToAnnouncements')}</Button>
+        <Card><div className="p-6"><div className="flex flex-wrap items-center gap-2"><Badge tone="brand" className="max-w-full break-words">{course?.title || t('publicSite.allCourses')}</Badge><span className="min-w-0 text-[11px] text-muted">{t('learner.publishedOn')} {date(current.publishedAt || current.createdAt)}</span></div><h1 className="mt-3 break-words text-xl font-bold text-ink">{current.title}</h1><p className="mt-4 break-words whitespace-pre-wrap text-sm leading-relaxed text-muted">{current.content}</p></div></Card>
       </div>
     )
   }
@@ -448,7 +452,7 @@ export function LearnerAnnouncements() {
           />
         </div>
         {rows.length ? (
-          <div className="space-y-3 p-3 sm:p-4">{rows.map((item) => { const course = item.courseId ? getCourse(state, item.courseId) : null; const unreadItem = isUnread(item); return <Link key={item.id} to={`${announcementsBase}/${item.id}`}><Card className={cn('transition hover:border-brand', unreadItem && 'border-brand/30')}><div className="flex items-start gap-3 p-4"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand"><Megaphone size={17} /></span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-semibold text-ink">{item.title}</p>{unreadItem ? <Badge tone="brand">{t('learner.unreadOnly')}</Badge> : null}{course ? <Badge tone="blue">{course.title}</Badge> : null}</div><p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted">{item.content}</p><p className="mt-1.5 text-[10px] text-muted">{dateTime(item.publishedAt || item.createdAt)}</p></div><ArrowRight size={15} className="mt-1 shrink-0 text-muted" /></div></Card></Link> })}</div>
+          <div className="space-y-3 p-3 sm:p-4">{rows.map((item) => { const course = item.courseId ? getCourse(state, item.courseId) : null; const unreadItem = isUnread(item); return <Link key={item.id} to={`${announcementsBase}/${item.id}`}><Card className={cn('transition hover:border-brand', unreadItem && 'border-brand/30')}><div className="flex items-start gap-3 p-4"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand"><Megaphone size={17} /></span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="min-w-0 break-words text-sm font-semibold text-ink">{item.title}</p>{unreadItem ? <Badge tone="brand">{t('learner.unreadOnly')}</Badge> : null}{course ? <Badge tone="blue" className="max-w-full break-words">{course.title}</Badge> : null}</div><p className="mt-1 line-clamp-2 break-words text-xs leading-relaxed text-muted">{item.content}</p><p className="mt-1.5 text-[10px] text-muted">{dateTime(item.publishedAt || item.createdAt)}</p></div><ArrowRight size={15} className="mt-1 shrink-0 text-muted rtl:rotate-180" /></div></Card></Link> })}</div>
         ) : <EmptyState icon={Megaphone} title={t('learner.noAnnouncements')} description={t('learner.noAnnouncementsDesc')} />}
       </Card>
     </div>
@@ -474,7 +478,7 @@ export function LearnerQuizResults() {
       <div className="grid gap-3 sm:grid-cols-3"><StatCard label={t('learner.quizResults')} value={number(attempts.length)} icon={FileQuestion} tone="brand" /><StatCard label={t('learner.quizPassed')} value={number(passed)} icon={CheckCircle2} tone="success" /><StatCard label={t('learner.averageScore')} value={`${attempts.length ? Math.round(attempts.reduce((sum, attempt) => sum + attempt.percentage, 0) / attempts.length) : 0}%`} icon={Star} tone="amber" /></div>
       <Card>
         <div className="border-b border-line p-3"><SearchField value={query} onChange={setQuery} placeholder={t('common.search')} className="w-full sm:w-72" /></div>
-        {attempts.length ? <Table><thead><tr><th>{t('learner.quizTitle')}</th><th>{t('learner.tableCourse')}</th><th>{t('learner.averageScore')}</th><th>{t('learner.tableStatus')}</th><th>{t('learner.tableDate')}</th></tr></thead><tbody>{attempts.map((attempt) => { const quiz = getQuiz(state, attempt.quizId); const course = getCourse(state, attempt.courseId); return <tr key={attempt.id}><td className="text-xs font-medium text-ink">{quiz?.title || '—'}</td><td className="max-w-[180px] truncate text-xs text-muted">{course?.title}</td><td className="text-xs font-semibold text-ink">{attempt.percentage}%</td><td><Badge tone={attempt.passed ? 'success' : 'danger'}>{attempt.passed ? t('learner.quizPassed') : t('learner.quizFailed')}</Badge></td><td className="text-[11px] text-muted">{date(attempt.completedAt)}</td></tr> })}</tbody></Table> : <EmptyState icon={FileQuestion} title={t('learner.noQuizResults')} description={t('learner.noQuizResultsDesc')} />}
+        {attempts.length ? <Table><thead><tr><th>{t('learner.quizTitle')}</th><th>{t('learner.tableCourse')}</th><th>{t('learner.averageScore')}</th><th>{t('learner.tableStatus')}</th><th>{t('learner.tableDate')}</th></tr></thead><tbody>{attempts.map((attempt) => { const quiz = getQuiz(state, attempt.quizId); const course = getCourse(state, attempt.courseId); return <tr key={attempt.id}><td className="max-w-[180px] truncate text-xs font-medium text-ink">{quiz?.title || '—'}</td><td className="max-w-[180px] truncate text-xs text-muted">{course?.title}</td><td className="text-xs font-semibold text-ink">{attempt.percentage}%</td><td><Badge tone={attempt.passed ? 'success' : 'danger'}>{attempt.passed ? t('learner.quizPassed') : t('learner.quizFailed')}</Badge></td><td className="text-[11px] text-muted">{date(attempt.completedAt)}</td></tr> })}</tbody></Table> : <EmptyState icon={FileQuestion} title={t('learner.noQuizResults')} description={t('learner.noQuizResultsDesc')} />}
       </Card>
     </div>
   )
@@ -551,7 +555,7 @@ export function LearnerPayments() {
         <div className="border-b border-line bg-surface/40 p-3 sm:p-4">
           <Tabs items={tabs} value={filter} onChange={setFilter} variant="pill" className="border-0" />
         </div>
-        {rows.length ? <Table><thead><tr><th>{t('learner.tableCourse')}</th><th>{t('learner.tableAmount')}</th><th className="hidden sm:table-cell">{t('learner.tableMethod')}</th><th className="hidden md:table-cell">{t('learner.tableDate')}</th><th>{t('learner.tableStatus')}</th><th className="text-end">{t('learner.tableAction')}</th></tr></thead><tbody>{rows.map((row) => <tr key={row.payment.id}><td className="max-w-[240px] truncate text-xs font-medium text-ink">{row.course?.title}</td><td className="text-xs font-semibold text-ink">{row.payment.amount ? money(row.payment.amount) : t('publicSite.free')}</td><td className="hidden sm:table-cell"><Badge tone={row.payment.method === 'manual' ? 'amber' : 'blue'}>{t(paymentMethodLabelKey(displayPaymentMethod(row.payment)))}</Badge></td><td className="hidden md:table-cell text-[11px] text-muted">{date(row.payment.submittedAt)}</td><td><StatusPill status={row.payment.status} t={t} /></td><td><div className="flex justify-end"><Button variant="ghost" size="xs" icon={Receipt} onClick={() => setReceipt(row)}>{row.payment.reference || '—'}</Button></div></td></tr>)}</tbody></Table> : <EmptyState icon={Receipt} title={t('learner.noPaymentHistory')} description={t('learner.noPaymentHistoryDesc')} />}
+        {rows.length ? <Table><thead><tr><th>{t('learner.tableCourse')}</th><th>{t('learner.tableAmount')}</th><th className="hidden sm:table-cell">{t('learner.tableMethod')}</th><th className="hidden md:table-cell">{t('learner.tableDate')}</th><th>{t('learner.tableStatus')}</th><th className="text-end">{t('learner.tableAction')}</th></tr></thead><tbody>{rows.map((row) => <tr key={row.payment.id}><td className="max-w-[240px] truncate text-xs font-medium text-ink">{row.course?.title}</td><td className="text-xs font-semibold text-ink">{row.payment.amount ? money(row.payment.amount) : t('publicSite.free')}</td><td className="hidden sm:table-cell"><Badge tone={row.payment.method === 'manual' ? 'amber' : 'blue'}>{t(paymentMethodLabelKey(displayPaymentMethod(row.payment)))}</Badge></td><td className="hidden md:table-cell text-[11px] text-muted">{date(row.payment.submittedAt)}</td><td><StatusPill status={row.payment.status} t={t} /></td><td><div className="flex justify-end"><Button variant="ghost" size="xs" icon={Receipt} className="max-w-[160px] truncate" onClick={() => setReceipt(row)}>{row.payment.reference || '—'}</Button></div></td></tr>)}</tbody></Table> : <EmptyState icon={Receipt} title={t('learner.noPaymentHistory')} description={t('learner.noPaymentHistoryDesc')} />}
       </Card>
       <Modal open={Boolean(receipt)} onClose={() => setReceipt(null)} title={t('payments.receipt')} description={receipt?.course?.title} size="md" footer={<Button variant="secondary" onClick={() => setReceipt(null)}>{t('common.close')}</Button>}>
         {receipt ? (
@@ -594,7 +598,7 @@ export function LearnerProfile() {
     <div className="space-y-5">
       <PageHeader eyebrow={t('nav.learner')} title={t('learner.profile')} description={t('learner.profileDesc')} />
       <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
-        <Card><CardHeader title={t('learner.profile')} /><div className="grid gap-4 p-5 sm:grid-cols-2"><div className="sm:col-span-2 flex items-center gap-3"><Avatar name={user.name} size="lg" /><div><p className="text-sm font-semibold text-ink">{user.name}</p><p className="text-xs text-muted">{user.email}</p><p className="mt-1 text-[10px] text-muted">{t('learner.enrolledOn')} {new Date(user.createdAt).toLocaleDateString('fr-FR')} · {courses.length} {t('nav.courses').toLowerCase()}</p></div></div><div className="sm:col-span-2"><Label>{t('learner.fullName')}</Label><Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></div><div className="sm:col-span-2"><Label hint={t('learner.emailNotEditable')}>{t('learner.email')}</Label><Input value={user.email} disabled /></div><div><Label>{t('learner.phone')}</Label><Input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /></div><div><Label>{t('learner.language')}</Label><Select value={form.language} onChange={(event) => setForm({ ...form, language: event.target.value })}><option value="fr">Français</option><option value="ar">العربية</option></Select></div><div className="sm:col-span-2"><Button onClick={saveProfile}>{t('learner.saveProfile')}</Button></div></div></Card>
+        <Card><CardHeader title={t('learner.profile')} /><div className="grid gap-4 p-5 sm:grid-cols-2"><div className="sm:col-span-2 flex items-center gap-3"><Avatar name={user.name} size="lg" /><div className="min-w-0"><p className="truncate text-sm font-semibold text-ink">{user.name}</p><p className="truncate text-xs text-muted" dir="ltr">{user.email}</p><p className="mt-1 break-words text-[10px] text-muted">{t('learner.enrolledOn')} {new Date(user.createdAt).toLocaleDateString('fr-FR')} · {courses.length} {t('nav.courses').toLowerCase()}</p></div></div><div className="sm:col-span-2"><Label>{t('learner.fullName')}</Label><Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></div><div className="sm:col-span-2"><Label hint={t('learner.emailNotEditable')}>{t('learner.email')}</Label><Input value={user.email} disabled /></div><div><Label>{t('learner.phone')}</Label><Input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /></div><div><Label>{t('learner.language')}</Label><Select value={form.language} onChange={(event) => setForm({ ...form, language: event.target.value })}><option value="fr">Français</option><option value="ar">العربية</option></Select></div><div className="sm:col-span-2"><Button onClick={saveProfile}>{t('learner.saveProfile')}</Button></div></div></Card>
         <Card><CardHeader title={t('learner.changePassword')} /><div className="space-y-3 p-5"><div><Label>{t('learner.currentPassword')}</Label><Input type="password" value={passwords.current} onChange={(event) => setPasswords({ ...passwords, current: event.target.value })} /></div><div><Label>{t('learner.newPassword')}</Label><Input type="password" value={passwords.next} onChange={(event) => setPasswords({ ...passwords, next: event.target.value })} /></div><div><Label>{t('learner.confirmPassword')}</Label><Input type="password" value={passwords.confirm} onChange={(event) => setPasswords({ ...passwords, confirm: event.target.value })} /></div><Button onClick={savePassword}>{t('learner.updatePassword')}</Button></div></Card>
       </div>
     </div>
